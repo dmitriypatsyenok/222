@@ -1,0 +1,187 @@
+import React, { useState } from 'react';
+import { ClassEvent, Language } from './types';
+import { translate } from './i18n';
+import { formatCustomDate, formatLocalDateToYYYYMMDD } from './dateFormatter';
+import { Plus, Trash2, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { haptic } from './telegram';
+
+interface EventsViewProps {
+  events: ClassEvent[];
+  lang: Language;
+  onAddEvent: (title: string, date: string, time: string) => void;
+  onDeleteEvent: (id: string) => void;
+}
+
+export const EventsView: React.FC<EventsViewProps> = ({
+  events,
+  lang,
+  onAddEvent,
+  onDeleteEvent
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [date, setDate] = useState(() => formatLocalDateToYYYYMMDD(new Date()));
+  const [time, setTime] = useState('12:00');
+
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const handleSave = () => {
+    if (!title.trim() || !date) {
+      setFormError(lang === 'be' ? 'Калі ласка, запоўніце назву і дату!' : 'Пожалуйста, заполните название и дату!');
+      return;
+    }
+    onAddEvent(title.trim(), date, time);
+    setTitle('');
+    setFormError(null);
+    setIsModalOpen(false);
+    haptic('success');
+  };
+
+  const sortedEvents = [...events].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+  return (
+    <div className="space-y-3.5 animate-fade-in">
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="w-full py-3 rounded-2xl bg-white hover:bg-zinc-200 text-black font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99] shadow-sm transition-all"
+      >
+        <Plus className="w-4 h-4" />
+        <span>{translate('add_event', lang)}</span>
+      </button>
+
+      {sortedEvents.length === 0 ? (
+        <div className="bg-[#121215] border border-[#27272A] rounded-3xl p-8 text-center text-[#888] text-xs">
+          {translate('no_events', lang)}
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {sortedEvents.map(ev => {
+            const dateStr = formatCustomDate(ev.date, 'day_month_long', lang);
+
+            return (
+              <div
+                key={ev.id}
+                className="flex items-center justify-between gap-3.5 bg-[#121215] border border-[#27272A] rounded-2xl p-4 shadow-sm"
+              >
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="text-xs font-bold text-white truncate">
+                    {ev.title}
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-[#888]">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+                      {dateStr}
+                    </span>
+                    {ev.time && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                        {ev.time}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    onDeleteEvent(ev.id);
+                    haptic('success');
+                  }}
+                  className="w-8 h-8 rounded-xl bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center hover:bg-zinc-700 transition-all shrink-0 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add Event Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="w-full max-w-md bg-[#121215] border border-[#27272A] rounded-t-3xl sm:rounded-3xl p-5 space-y-4 animate-slide-up">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-white rounded-full inline-block"></span>
+              {translate('add_event', lang)}
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold text-[#888] mb-1.5 block">
+                  {lang === 'be' ? 'Назва мерапрыемства' : 'Название мероприятия'}
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSave();
+                    }
+                  }}
+                  placeholder={
+                    lang === 'be'
+                      ? 'Напрыклад: тэст па фізіцы'
+                      : 'Например: тест по физике'
+                  }
+                  className="w-full bg-[#18181C] border border-[#27272A] rounded-2xl text-xs text-white p-3 focus:outline-none focus:border-zinc-400 placeholder:text-[#666]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="text-[11px] font-bold text-[#888] mb-1.5 block">
+                    {lang === 'be' ? 'Дата' : 'Дата'}
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    className="w-full bg-[#18181C] border border-[#27272A] rounded-2xl text-xs text-white p-3 focus:outline-none focus:border-zinc-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-[#888] mb-1.5 block">
+                    {lang === 'be' ? 'Час' : 'Время'}
+                  </label>
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={e => setTime(e.target.value)}
+                    className="w-full bg-[#18181C] border border-[#27272A] rounded-2xl text-xs text-white p-3 focus:outline-none focus:border-zinc-400"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {formError && (
+              <div className="text-xs text-rose-400 font-medium px-1 animate-fade-in flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <div className="flex gap-2.5 pt-1">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="flex-1 py-2.5 rounded-2xl bg-zinc-800 border border-zinc-700 text-xs text-white font-bold hover:bg-zinc-700 transition-all"
+              >
+                {translate('cancel', lang)}
+              </button>
+              <button
+                onClick={handleSave}
+                className="flex-1 py-2.5 rounded-2xl bg-white hover:bg-zinc-200 text-xs text-black font-bold shadow-sm transition-all"
+              >
+                {translate('save', lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

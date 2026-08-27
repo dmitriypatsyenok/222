@@ -1,0 +1,449 @@
+import { Language } from './types';
+
+export const I18N = {
+  ru: {
+    app_title: "Ierihon3 Mini App",
+    hi: "Привет!",
+    menu_schedule: "Расписание",
+    menu_schedule_d: "Уроки по дням",
+    menu_food: "Столовая и опросы",
+    menu_food_d: "Опрос на обед",
+    menu_hw: "Домашнее задание",
+    menu_hw_d: "Задания по предметам",
+    menu_events: "Мероприятия",
+    menu_events_d: "События класса",
+    menu_class: "Наш класс",
+    menu_class_d: "Дежурства и ДР",
+    menu_settings: "Настройки",
+    menu_settings_d: "Язык и данные",
+    choose_profile: "Выбери профиль",
+    search_subject: "Поиск предмета",
+    search_subject_d: "Список всех предметов",
+    hw_by_days: "Домашние задания по дням",
+    choose_subject: "Выбери предмет",
+    hw_history: "История заданий",
+    hw_create: "Создать задание",
+    save: "Сохранить",
+    save_hw_btn: "Сохранить задание",
+    poll_create: "Создать новый опрос",
+    poll_create_d: "Запустить опрос на завтра",
+    poll_vote: "Проголосовать",
+    poll_vote_d: "Отдать голос в опросе",
+    poll_results: "Посмотреть результаты",
+    poll_results_d: "Архив опросов по датам",
+    v_eat: "Буду есть",
+    v_no: "Не буду есть",
+    v_abs: "Отсутствую",
+    v_eat_s: "Ем",
+    v_no_s: "Не ем",
+    v_abs_s: "Нет",
+    poll_pick_date: "Выбери дату опроса",
+    poll_change_vote: "Выбери новый голос в архиве",
+    btn_edit_past: "Изменить свой голос",
+    btn_lock_past: "Завершить изменение",
+    add_event: "Создать мероприятие",
+    duties_title: "Дежурства по классу",
+    duties_desc: "График дежурных учеников",
+    birthdays_title: "Дни рождения",
+    birthdays_desc: "Календарь именинников",
+    lang_title: "Язык интерфейса",
+    theme_title: "Тема оформления",
+    theme_dark: "Тёмная",
+    theme_light: "Светлая",
+    main_profile_title: "Основной профиль обучения",
+    main_profile_desc: "Определяет ваше расписание и уроки по умолчанию",
+    admin_title: "Панель администратора",
+    reset_schedule: "Сброс расписания до стокового",
+    reset_schedule_d: "Восстанавливает начальное школьное расписание для всех профилей",
+    upload_schedule: "Импорт расписания",
+    upload_schedule_d: "Загрузить файл расписания",
+    export_schedule: "Экспорт расписания",
+    export_schedule_d: "Сохранить файл расписания",
+    export_hw: "Экспорт домашних заданий",
+    export_hw_d: "Сохранить файл заданий",
+    import_hw: "Импорт домашних заданий",
+    import_hw_d: "Загрузить файл заданий",
+    export_duties: "Экспорт дежурств",
+    export_duties_d: "Сохранить файл дежурств",
+    import_duties: "Импорт дежурств",
+    import_duties_d: "Загрузить файл дежурств",
+    export_bdays: "Экспорт дней рождения",
+    export_bdays_d: "Сохранить список именинников",
+    import_bdays: "Импорт дней рождения",
+    import_bdays_d: "Загрузить список именинников",
+    reset_bdays: "Сброс дней рождения до стоковых",
+    reset_bdays_d: "Восстанавливает начальный список именинников класса",
+    clear_hw_all: "Очистить все задания",
+    clear_hw_all_d: "Удалить все домашние задания",
+    clear_duties_all: "Очистить все дежурства",
+    clear_duties_all_d: "Удалить все зоны и график дежурных",
+    delete_poll: "Удалить опрос столовой",
+    delete_poll_d: "Выбрать и удалить опрос из истории или текущий",
+    confirm_delete_poll: "Вы уверены, что хотите удалить выбранный опрос?",
+    clear_all_data: "Обнулить все данные приложения",
+    clear_all_data_d: "Полный сброс: расписание, ДЗ, дежурства, дни рождения, мероприятия и опросы",
+    confirm_clear_all_data: "Вы уверены, что хотите ОБНУЛИТЬ ВСЕ данные приложения (расписание, ДЗ, дежурства, дни рождения, мероприятия, опросы)? Это действие нельзя отменить!",
+    tg_bot_title: "Настройка Telegram Бота и Webhook",
+    tg_bot_token_ph: "Токен Telegram Бота (например: 123456:ABC...)",
+    tg_chat_id_ph: "ID чата или канала (например: -100123456789)",
+    tg_bot_saved: "Настройки Telegram бота сохранены!",
+    tg_app_url_label: "Ссылка на Telegram Mini App:",
+    tg_app_url_ph: "https://t.me/ierihon_testbot/app",
+    tg_auto_delete_label: "Авто-удаление команды /app и ответа бота",
+    tg_delete_delay_label: "Удалять ответ через (сек):",
+    tg_setup_webhook_btn: "Активировать команду /app в группах",
+    tg_webhook_success: "✓ Webhook успешно подключен! Бот будет отвечать на /app и удалять сообщения.",
+    tg_webhook_error: "Ошибка подключения Webhook. Проверьте Токен Бота.",
+    hw_edit_title: "Текст домашнего задания",
+    
+    // Duty system translations
+    create_duty_zone: "Создать зону дежурства",
+    assign_student: "Назначить / редактировать учеников",
+    edit_duty_zone: "Редактирование зоны дежурства",
+    choose_zone_preset: "Выбрать стандартную зону",
+    or_custom_zone: "или ввести свою зону",
+    zone_name_placeholder: "Название зоны (напр. '1 этаж')",
+    duty_search_placeholder: "Поиск дежурного по фамилии...",
+    search_results: "Результаты поиска",
+    no_duties_day: "В этот день пока нет созданных зон дежурства.",
+    no_duty_found: "Дежурств не найдено",
+    duty_on_days: "Дежурит:",
+    confirm_delete_zone: "Удалить эту зону дежурства?",
+    select_students: "Выберите учеников из списка класса",
+    add_custom_student: "Или добавьте имя вручную (через запятую)",
+    custom_student_ph: "Например: Иванов Иван, Петров Петр",
+    selected_count: "Назначено учеников:",
+    select_all: "Выбрать всех",
+    deselect_all: "Снять выбор",
+    
+    cancel: "Отмена",
+    t_schedule: "Расписание",
+    t_hw: "Домашнее задание",
+    t_food: "Столовая и опросы",
+    t_events: "Мероприятия",
+    t_class: "Наш класс",
+    t_duties: "Дежурства",
+    t_birthdays: "Дни рождения",
+    t_settings: "Настройки",
+    profiles: { base: "Базовый", math: "Математический", chem: "Химический" },
+    t_days_s: { pn: "Пн", vt: "Вт", sr: "Ср", cht: "Чт", pt: "Пт" },
+    t_days: { pn: "Понедельник", vt: "Вторник", sr: "Среда", cht: "Четверг", pt: "Пятница" },
+    no_lessons: "Уроков нет",
+    no_hw: "Нет домашних заданий",
+    no_events: "Нет предстоящих мероприятий",
+    next_lesson: "На урок:",
+    edit: "Редактировать",
+    delete: "Удалить",
+    confirm_delete_hw: "Вы уверены, что хотите удалить это задание?",
+    confirm_clear_hw_all: "Вы уверены, что хотите удалить ВСЕ домашние задания?",
+    poll_for: "Опрос на",
+    created: "Создан",
+    poll_not_created_msg: "Опрос еще не запущен! Нажмите 'Создать новый опрос'.",
+    today_birthdays: "Сегодня празднуют День Рождения!",
+    ph_hw_create: "Например: с. 42, №5",
+    ph_hw_edit: "Например: с. 12, №3",
+    ph_event_title: "Название (например: тест по физике)",
+    canteen_analytics_title: "📊 Визуальная аналитика столовой",
+    canteen_analytics_desc: "Статистика обедов и посещаемости класса",
+    total_polls: "Опросов проведено",
+    avg_eating_rate: "Средний % обедающих",
+    total_meals: "Всего заказов",
+    eating_trend: "Динамика обедающих (последние дни)",
+    top_eating_day: "Пиковый день",
+    voter_activity: "Активность опросов",
+    filter_all: "Все",
+    canteen_analytics_btn: "📊 Аналитика по месяцам",
+    canteen_analytics_modal_title: "📊 Аналитика посещаемости столовой",
+    all_time: "За всё время",
+    search_student: "Поиск ученика...",
+    stat_eat: "Буду есть",
+    stat_no: "Не буду есть",
+    stat_abs: "Отсутствую",
+    month_period: "Месяц / Период",
+    student_stats_title: "Индивидуальная статистика учеников"
+  },
+  be: {
+    app_title: "Ierihon3 Mini App",
+    hi: "Прывітанне!",
+    menu_schedule: "Расклад",
+    menu_schedule_d: "Урокі па днях",
+    menu_food: "Сталовая і апытанні",
+    menu_food_d: "Апытанне пра абед",
+    menu_hw: "Дамашняе заданне",
+    menu_hw_d: "Заданні па прадметах",
+    menu_events: "Падзеі",
+    menu_events_d: "Падзеі класа",
+    menu_class: "Наш клас",
+    menu_class_d: "Дзяжурствы і дні нараджэння",
+    menu_settings: "Налады",
+    menu_settings_d: "Мова і даныя",
+    choose_profile: "Выберыце профіль",
+    search_subject: "Пошук прадмета",
+    search_subject_d: "Спіс усіх прадметаў",
+    hw_by_days: "Дамашнія заданні па днях тыдня",
+    choose_subject: "Выберыце прадмет",
+    hw_history: "Гісторыя заданняў",
+    hw_create: "Стварыць заданне",
+    save: "Захаваць",
+    save_hw_btn: "Захаваць заданне",
+    poll_create: "Стварыць новае апытанне",
+    poll_create_d: "Запусціць апытанне на наступны навучальны дзень",
+    poll_vote: "Прагаласаваць",
+    poll_vote_d: "Аддаць голас у апытанні",
+    poll_results: "Паглядзець вынікі",
+    poll_results_d: "Архіў апытанняў па датах",
+    v_eat: "Буду есці",
+    v_no: "Не буду есці",
+    v_abs: "Адсутнічаю",
+    v_eat_s: "Ем",
+    v_no_s: "Не ем",
+    v_abs_s: "Няма",
+    poll_pick_date: "Выберыце дату апытання",
+    poll_change_vote: "Выберыце новы голас у архіве",
+    btn_edit_past: "Змяніць свой голас",
+    btn_lock_past: "Завяршыць змяненне",
+    add_event: "Дадаць падзею",
+    duties_title: "Дзяжурствы па класе",
+    duties_desc: "Графік дзяжурных вучняў",
+    birthdays_title: "Дні нараджэння",
+    birthdays_desc: "Каляндар імяніннікаў",
+    lang_title: "Мова інтэрфейсу",
+    theme_title: "Тэма афармлення",
+    theme_dark: "Цёмная",
+    theme_light: "Светлая",
+    main_profile_title: "Асноўны профіль навучання",
+    main_profile_desc: "Вызначае ваш расклад і ўрокі па змаўчанні",
+    admin_title: "Панэль адміністратара",
+    reset_schedule: "Скінуць расклад да пачатковага",
+    reset_schedule_d: "Аднаўляе стандартны школьны расклад для ўсіх профіляў",
+    upload_schedule: "Імпарт раскладу",
+    upload_schedule_d: "Загрузіць файл раскладу",
+    export_schedule: "Экспарт раскладу",
+    export_schedule_d: "Захаваць файл раскладу",
+    export_hw: "Экспарт дамашніх заданняў",
+    export_hw_d: "Захаваць файл заданняў",
+    import_hw: "Імпарт дамашніх заданняў",
+    import_hw_d: "Загрузіць файл заданняў",
+    export_duties: "Экспарт дзяжурстваў",
+    export_duties_d: "Захаваць файл дзяжурстваў",
+    import_duties: "Імпарт дзяжурстваў",
+    import_duties_d: "Загрузіць файл дзяжурстваў",
+    export_bdays: "Экспарт дзён нараджэння",
+    export_bdays_d: "Захаваць спіс імяніннікаў",
+    import_bdays: "Імпарт дзён нараджэння",
+    import_bdays_d: "Загрузіць спіс імяніннікаў",
+    reset_bdays: "Скінуць дні нараджэння да пачатковых",
+    reset_bdays_d: "Аднаўляе стандартны спіс імяніннікаў класса",
+    clear_hw_all: "Ачысціць усе заданні",
+    clear_hw_all_d: "Выдаліць усе дамашнія заданні",
+    clear_duties_all: "Ачысціць усе дзяжурствы",
+    clear_duties_all_d: "Выдаліць усе зоны і графік дзяжурных",
+    delete_poll: "Выдаліць апытанне сталовай",
+    delete_poll_d: "Выбраць і выдаліць апытанне з гісторыі або бягучае",
+    confirm_delete_poll: "Вы ўпэўненыя, што хочаце выдаліць выбранае апытанне?",
+    clear_all_data: "Скінуць усе даныя праграмы",
+    clear_all_data_d: "Поўны скід: расклад, дамашнія заданні, дзяжурствы, дні нараджэння, падзеі і апытанні",
+    confirm_clear_all_data: "Вы ўпэўненыя, што хочаце СКІНУЦЬ УСЕ даныя праграмы (расклад, дамашнія заданні, дзяжурствы, дні нараджэння, падзеі, апытанні)? Гэтае дзеянне нельга скасаваць!",
+    tg_bot_title: "Налады Telegram-бота і Webhook",
+    tg_bot_token_ph: "Токен Telegram-бота (напрыклад: 123456:ABC...)",
+    tg_chat_id_ph: "ID чата або канала (напрыклад: -100123456789)",
+    tg_bot_saved: "Налады Telegram-бота захаваны!",
+    tg_app_url_label: "Спасылка на Telegram Mini App:",
+    tg_app_url_ph: "https://t.me/ierihon_testbot/app",
+    tg_auto_delete_label: "Аўтавыдаленне каманды /app і адказу бота",
+    tg_delete_delay_label: "Выдаляць адказ праз (сек):",
+    tg_setup_webhook_btn: "Актываваць каманду /app у групах",
+    tg_webhook_success: "✓ Webhook паспяхова падлучаны! Бот будзе адказваць на каманду /app і выдаляць паведамленні.",
+    tg_webhook_error: "Памылка падлучэння Webhook. Праверце токен бота.",
+    hw_edit_title: "Тэкст дамашняга задання",
+    
+    // Duty system translations
+    create_duty_zone: "Стварыць зону дзяжурства",
+    assign_student: "Прызначыць / рэдагаваць вучняў",
+    edit_duty_zone: "Рэдагаванне зоны дзяжурства",
+    choose_zone_preset: "Выбраць стандартную зону",
+    or_custom_zone: "або ўвесці сваю зону",
+    zone_name_placeholder: "Назва зоны (напрыклад '1 паверх')",
+    duty_search_placeholder: "Пошук дзяжурнага па прозвішчы...",
+    search_results: "Вынікі пошуку",
+    no_duties_day: "У гэты дзень пакуль няма створаных зон дзяжурства.",
+    no_duty_found: "Дзяжурстваў не знойдзена",
+    duty_on_days: "Дзяжурыць:",
+    confirm_delete_zone: "Выдаліць гэтую зону дзяжурства?",
+    select_students: "Выберыце вучняў са спісу класа",
+    add_custom_student: "Або дадайце імя ўручную (праз коску)",
+    custom_student_ph: "Напрыклад: Іваноў Іван, Пятроў Пётр",
+    selected_count: "Прызначана вучняў:",
+    select_all: "Выбраць усіх",
+    deselect_all: "Зняць выбар",
+
+    cancel: "Скасаваць",
+    t_schedule: "Расклад",
+    t_hw: "Дамашняе заданне",
+    t_food: "Сталовая і апытанні",
+    t_events: "Падзеі",
+    t_class: "Наш клас",
+    t_duties: "Дзяжурствы",
+    t_birthdays: "Дні нараджэння",
+    t_settings: "Налады",
+    profiles: { base: "Базавы", math: "Матэматычны", chem: "Хімічны" },
+    t_days_s: { pn: "Пн", vt: "Аў", sr: "Ср", cht: "Чц", pt: "Пт" },
+    t_days: { pn: "Панядзелак", vt: "Аўторак", sr: "Серада", cht: "Чацвер", pt: "Пятніца" },
+    no_lessons: "Урокаў няма",
+    no_hw: "Няма дамашніх заданняў",
+    no_events: "Няма бліжэйшых падзей",
+    next_lesson: "На ўрок:",
+    edit: "Рэдагаваць",
+    delete: "Выдаліць",
+    confirm_delete_hw: "Вы ўпэўненыя, што хочаце выдаліць гэтае заданне?",
+    confirm_clear_hw_all: "Вы ўпэўненыя, што хочаце выдаліць УСЕ дамашнія заданні?",
+    poll_for: "Апытанне на",
+    created: "Створана",
+    poll_not_created_msg: "Апытанне яшчэ не запушчана! Націсніце 'Стварыць новае апытанне'.",
+    today_birthdays: "Сёння святкуюць Дзень нараджэння!",
+    ph_hw_create: "Напрыклад: с. 42, №5",
+    ph_hw_edit: "Напрыклад: с. 12, №3",
+    ph_event_title: "Назва (напрыклад: тэст па фізіцы)",
+    canteen_analytics_title: "📊 Візуальная аналітыка сталовай",
+    canteen_analytics_desc: "Статыстыка абедаў і наведванняў класа",
+    total_polls: "Праведзена апытанняў",
+    avg_eating_rate: "Сярэдні % абедаючых",
+    total_meals: "Усяго замоваў",
+    eating_trend: "Дынаміка абедаў (апошнія дні)",
+    top_eating_day: "Пікавы дзень",
+    voter_activity: "Актыўнасць апытанняў",
+    filter_all: "Усе",
+    canteen_analytics_btn: "📊 Аналітыка па месяцах",
+    canteen_analytics_modal_title: "📊 Аналітыка наведванняў сталовай",
+    all_time: "За ўвесь час",
+    search_student: "Пошук вучня...",
+    stat_eat: "Буду есці",
+    stat_no: "Не буду есці",
+    stat_abs: "Адсутнічаю",
+    month_period: "Месяц / Перыяд",
+    student_stats_title: "Індывідуальная статыстыка вучняў"
+  }
+};
+
+export function translate(key: string, lang: Language): string {
+  const dict = I18N[lang] || I18N.ru;
+  return (dict as any)[key] || (I18N.ru as any)[key] || key;
+}
+
+export function getProfileTitle(pKey: string, schedules?: any, lang: Language = 'ru'): string {
+  const customTitle = schedules?.[pKey]?.title;
+  if (lang === 'be') {
+    if (pKey === 'base' || customTitle === 'База' || customTitle === 'Базовый' || customTitle === 'Базавы') return 'База';
+    if (pKey === 'math' || customTitle === 'Математика' || customTitle === 'Математический' || customTitle === 'Матэматыка' || customTitle === 'Матэматычны' || customTitle === 'Матем' || customTitle === 'Матэм') return 'Матэматыка';
+    if (pKey === 'chem' || customTitle === 'Химия' || customTitle === 'Химический' || customTitle === 'Химико-биологический' || customTitle === 'Хімія' || customTitle === 'Хімічны' || customTitle === 'Хіміка-біялагічны') return 'Хімія';
+    if (customTitle === 'Базовый') return 'Базавы';
+    if (customTitle === 'Математический') return 'Матэматычны';
+    if (customTitle === 'Химический' || customTitle === 'Химико-биологический') return 'Хімічны';
+    return customTitle || pKey;
+  } else {
+    if (pKey === 'base' || customTitle === 'Базавы' || customTitle === 'База') return 'База';
+    if (pKey === 'math' || customTitle === 'Матэматыка' || customTitle === 'Матэматычны' || customTitle === 'Математика' || customTitle === 'Математический' || customTitle === 'Матэм' || customTitle === 'Матем') return 'Математика';
+    if (pKey === 'chem' || customTitle === 'Хімія' || customTitle === 'Хімічны' || customTitle === 'Хіміка-біялагічны' || customTitle === 'Химия' || customTitle === 'Химический' || customTitle === 'Химико-биологический') return 'Химия';
+    if (customTitle === 'Базавы') return 'Базовый';
+    if (customTitle === 'Матэматычны') return 'Математический';
+    if (customTitle === 'Хімічны' || customTitle === 'Хіміка-біялагічны') return 'Химический';
+    return customTitle || pKey;
+  }
+}
+
+export function getProfileFullTitle(pKey: string, schedules?: any, lang: Language = 'ru'): string {
+  const customTitle = schedules?.[pKey]?.title;
+  if (lang === 'be') {
+    if (pKey === 'base' || customTitle === 'База' || customTitle === 'Базовый' || customTitle === 'Базавы') return 'Базавы';
+    if (pKey === 'math' || customTitle === 'Математика' || customTitle === 'Математический' || customTitle === 'Матэматыка' || customTitle === 'Матэматычны') return 'Матэматычны';
+    if (pKey === 'chem' || customTitle === 'Химия' || customTitle === 'Химический' || customTitle === 'Химико-биологический' || customTitle === 'Хімія' || customTitle === 'Хімічны' || customTitle === 'Хіміка-біялагічны') return 'Хімічны';
+    return customTitle || pKey;
+  } else {
+    if (pKey === 'base' || customTitle === 'Базавы' || customTitle === 'База' || customTitle === 'Базовый') return 'Базовый';
+    if (pKey === 'math' || customTitle === 'Матэматычны' || customTitle === 'Матэматыка' || customTitle === 'Математический' || customTitle === 'Математика') return 'Математический';
+    if (pKey === 'chem' || customTitle === 'Хімічны' || customTitle === 'Хіміка-біялагічны' || customTitle === 'Хімія' || customTitle === 'Химический' || customTitle === 'Химико-биологический' || customTitle === 'Химия') return 'Химический';
+    return customTitle || pKey;
+  }
+}
+
+export function translateZoneName(name: string, lang: Language = 'ru'): string {
+  if (!name) return name;
+  const trimmed = name.trim();
+  const lower = trimmed.toLowerCase();
+  if (lang === 'be') {
+    if (lower === 'столовая' || lower === 'сталовая') return 'Сталовая';
+    if (lower === '1 этаж' || lower === '1 паверх') return '1 паверх';
+    if (lower === '2 этаж' || lower === '2 паверх') return '2 паверх';
+    if (lower === '3 этаж' || lower === '3 паверх') return '3 паверх';
+    return trimmed
+      .replace(/\b1\s*этаж\b/gi, '1 паверх')
+      .replace(/\b2\s*этаж\b/gi, '2 паверх')
+      .replace(/\b3\s*этаж\b/gi, '3 паверх')
+      .replace(/\bстоловая\b/gi, 'Сталовая');
+  } else {
+    if (lower === 'сталовая' || lower === 'столовая') return 'Столовая';
+    if (lower === '1 паверх' || lower === '1 этаж') return '1 этаж';
+    if (lower === '2 паверх' || lower === '2 этаж') return '2 этаж';
+    if (lower === '3 паверх' || lower === '3 этаж') return '3 этаж';
+    return trimmed
+      .replace(/\b1\s*паверх\b/gi, '1 этаж')
+      .replace(/\b2\s*паверх\b/gi, '2 этаж')
+      .replace(/\b3\s*паверх\b/gi, '3 этаж')
+      .replace(/\bсталовая\b/gi, 'Столовая');
+  }
+}
+
+export const STUDENT_NAME_TRANSLATIONS: Record<string, { ru: string; be: string }> = {
+  "акрамова сагдияна": { ru: "Акрамова Сагдияна", be: "Акрамава Сагдзіяна" },
+  "дубовик артем": { ru: "Дубовик Артем", be: "Дубовік Арцём" },
+  "дубовик артём": { ru: "Дубовик Артем", be: "Дубовік Арцём" },
+  "дятлов влад": { ru: "Дятлов Влад", be: "Дзятлаў Улад" },
+  "еремеева ксюша": { ru: "Еремеева Ксюша", be: "Ерамеева Ксюша" },
+  "зайцева алина": { ru: "Зайцева Алина", be: "Зайцава Аліна" },
+  "комар влад": { ru: "Комар Влад", be: "Камар Улад" },
+  "овсяник стеша": { ru: "Овсяник Стеша", be: "Аўсянік Сцеша" },
+  "пациенок дима": { ru: "Пациенок Дима", be: "Пацыёнак Дзіма" },
+  "перевозникова арина": { ru: "Перевозникова Арина", be: "Перавознікава Арына" },
+  "самойлов витя": { ru: "Самойлов Витя", be: "Самойлаў Віця" },
+  "цмыг алёна": { ru: "Цмыг Алёна", be: "Цмыг Алёна" },
+  "цмыг алена": { ru: "Цмыг Алёна", be: "Цмыг Алёна" },
+  "цмыг яна": { ru: "Цмыг Яна", be: "Цмыг Яна" },
+  "щербич вика": { ru: "Щербич Вика", be: "Шчэрбіч Віка" },
+  "щигельская вика": { ru: "Щигельская Вика", be: "Шчыгельская Віка" },
+  "дмитрий александрович": { ru: "Дмитрий Александрович", be: "Дзмітрый Аляксандравіч" },
+  // Reverse translations (be -> ru/be)
+  "акрамава сагдзіяна": { ru: "Акрамова Сагдияна", be: "Акрамава Сагдзіяна" },
+  "дубовік арцём": { ru: "Дубовик Артем", be: "Дубовік Арцём" },
+  "дзятлаў улад": { ru: "Дятлов Влад", be: "Дзятлаў Улад" },
+  "ерамеева ксюша": { ru: "Еремеева Ксюша", be: "Ерамеева Ксюша" },
+  "зайцава аліна": { ru: "Зайцева Алина", be: "Зайцава Аліна" },
+  "камар улад": { ru: "Комар Влад", be: "Камар Улад" },
+  "аўсянік сцеша": { ru: "Овсяник Стеша", be: "Аўсянік Сцеша" },
+  "пацыёнак дзіма": { ru: "Пациенок Дима", be: "Пацыёнак Дзіма" },
+  "перавознікава арына": { ru: "Перевозникова Арина", be: "Перавознікава Арына" },
+  "самойлаў віця": { ru: "Самойлов Витя", be: "Самойлаў Віця" },
+  "шчэрбіч віка": { ru: "Щербич Вика", be: "Шчэрбіч Віка" },
+  "шчыгельская віка": { ru: "Щигельская Вика", be: "Шчыгельская Віка" },
+  "дзмітрый аляксандравіч": { ru: "Дмитрий Александрович", be: "Дзмітрый Аляксандравіч" }
+};
+
+export function getStudentDisplayName(raw: any, lang: Language = 'ru'): string {
+  if (!raw) return '';
+  if (typeof raw === 'object') {
+    if (lang === 'be' && raw.nameBe) return raw.nameBe;
+    return getStudentDisplayName(raw.name, lang);
+  }
+  const str = String(raw).trim();
+  if (str.includes(',')) {
+    const parts = str.split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      return lang === 'be' ? parts[1] : parts[0];
+    }
+  }
+  const lower = str.toLowerCase();
+  if (STUDENT_NAME_TRANSLATIONS[lower]) {
+    return STUDENT_NAME_TRANSLATIONS[lower][lang];
+  }
+  return str;
+}
+
