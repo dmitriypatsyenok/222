@@ -46,8 +46,24 @@ export function sanitizeBirthdaysList(rawList: any[]): BirthdayItem[] {
       if (nameRu.includes(',')) {
         const parts = nameRu.split(',').map(s => s.trim()).filter(Boolean);
         if (parts.length >= 2) {
-          nameRu = parts[0];
-          if (!nameBe) nameBe = parts[1];
+          const part1 = parts[0];
+          const part2 = parts[1];
+          const part2IsBe = /[ўі’'–—]|\bдз|\bдж/i.test(part2);
+          if (part2IsBe) {
+            nameRu = part1;
+            nameBe = part2;
+          } else {
+            nameRu = part2;
+            nameBe = part1;
+          }
+        }
+      }
+
+      const lowerRu = nameRu.toLowerCase();
+      if (STUDENT_NAME_TRANSLATIONS[lowerRu]) {
+        nameRu = STUDENT_NAME_TRANSLATIONS[lowerRu].ru;
+        if (!nameBe) {
+          nameBe = STUDENT_NAME_TRANSLATIONS[lowerRu].be;
         }
       }
 
@@ -538,6 +554,7 @@ export default function App() {
   // Language setter
   const handleSetLang = (newLang: Language) => {
     setLangState(newLang);
+    localStorage.setItem('ierihon_lang', newLang);
     haptic('selection');
   };
 
