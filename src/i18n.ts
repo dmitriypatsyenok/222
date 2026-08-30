@@ -430,8 +430,14 @@ export const STUDENT_NAME_TRANSLATIONS: Record<string, { ru: string; be: string 
 export function getStudentDisplayName(raw: any, lang: Language = 'ru'): string {
   if (!raw) return '';
   if (typeof raw === 'object') {
-    if (lang === 'be' && raw.nameBe) return raw.nameBe;
-    return getStudentDisplayName(raw.name, lang);
+    if (lang === 'be') {
+      if (raw.nameBe) return String(raw.nameBe).trim();
+      return getStudentDisplayName(raw.name, 'be');
+    } else {
+      if (raw.name) return getStudentDisplayName(raw.name, 'ru');
+      if (raw.nameRu) return getStudentDisplayName(raw.nameRu, 'ru');
+      return getStudentDisplayName(raw.nameBe, 'ru');
+    }
   }
   const str = String(raw).trim();
   if (str.includes(',')) {

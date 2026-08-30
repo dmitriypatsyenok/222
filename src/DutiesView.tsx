@@ -162,7 +162,8 @@ export const DutiesView: React.FC<DutiesViewProps> = ({
     if (!f) return true;
     return (
       b.name.toLowerCase().includes(f) ||
-      getStudentDisplayName(b.name, lang).toLowerCase().includes(f)
+      (b.nameBe && b.nameBe.toLowerCase().includes(f)) ||
+      getStudentDisplayName(b, lang).toLowerCase().includes(f)
     );
   });
 
@@ -485,7 +486,7 @@ export const DutiesView: React.FC<DutiesViewProps> = ({
                             : 'bg-zinc-800/80 hover:bg-zinc-800 text-[#aaa] border border-transparent'
                         }`}
                       >
-                        <span className="text-xs">{getStudentDisplayName(b.name, lang)}</span>
+                        <span className="text-xs">{getStudentDisplayName(b, lang)}</span>
                         <div
                           className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 ${
                             isSelected

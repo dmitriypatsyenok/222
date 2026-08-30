@@ -31,9 +31,40 @@ import { DutiesView } from './DutiesView';
 import { BirthdaysView } from './BirthdaysView';
 import { SettingsView } from './SettingsView';
 import { parseAndNormalizeSchedule, extractSubjectKey, getNextSchoolDay, getNextLessonDate, parseLocalDate, formatLocalDateToYYYYMMDD } from './dateFormatter';
-import { translate, getProfileFullTitle, translateZoneName, getStudentDisplayName } from './i18n';
+import { translate, getProfileFullTitle, translateZoneName, getStudentDisplayName, STUDENT_NAME_TRANSLATIONS } from './i18n';
 import { Users, Calendar } from 'lucide-react';
 import { subscribeToDoc, updateDocData } from './firebase';
+
+export function sanitizeBirthdaysList(rawList: any[]): BirthdayItem[] {
+  if (!Array.isArray(rawList)) return [];
+  return rawList
+    .filter(b => b && (b.name || b.nameBe) && !String(b.name).includes('Иванова') && !String(b.name).includes('Каверзникова') && !String(b.name).includes('Рыбарт'))
+    .map(b => {
+      let nameRu = String(b.name || '').trim();
+      let nameBe = b.nameBe ? String(b.nameBe).trim() : '';
+
+      if (nameRu.includes(',')) {
+        const parts = nameRu.split(',').map(s => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          nameRu = parts[0];
+          if (!nameBe) nameBe = parts[1];
+        }
+      }
+
+      if (!nameBe && nameRu) {
+        const lower = nameRu.toLowerCase();
+        if (STUDENT_NAME_TRANSLATIONS[lower]?.be) {
+          nameBe = STUDENT_NAME_TRANSLATIONS[lower].be;
+        }
+      }
+
+      return {
+        name: nameRu,
+        nameBe: nameBe || undefined,
+        date: String(b.date || '').trim()
+      };
+    });
+}
 
 export default function App() {
   // Telegram setup
@@ -147,12 +178,12 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const cleaned = parsed.filter(b => b && b.name && !b.name.includes('Иванова') && !b.name.includes('Каверзникова') && !b.name.includes('Рыбарт'));
+          const cleaned = sanitizeBirthdaysList(parsed);
           if (cleaned.length > 0) return cleaned;
         }
       } catch (e) { /* ignore */ }
     }
-    return INITIAL_BIRTHDAYS.filter(b => b && b.name && !b.name.includes('Иванова'));
+    return sanitizeBirthdaysList(INITIAL_BIRTHDAYS);
   });
 
   // Events
@@ -292,9 +323,9 @@ export default function App() {
         'birthdays',
         data => {
           if (Array.isArray(data)) {
-            const cleaned = data.filter(b => b && b.name && !b.name.includes('Иванова') && !b.name.includes('Каверзникова') && !b.name.includes('Рыбарт'));
+            const cleaned = sanitizeBirthdaysList(data);
             setBirthdays(cleaned);
-            if (cleaned.length !== data.length) {
+            if (JSON.stringify(cleaned) !== JSON.stringify(data)) {
               updateDocData('birthdays', cleaned);
             }
           }
@@ -815,7 +846,7 @@ export default function App() {
 
   const handleResetBirthdays = () => {
     if (confirm(lang === 'be' ? 'Скінуць спіс дзён нараджэння да пачатковага (стокавага)?' : 'Сбросить список дней рождения до начального (стокового)?')) {
-      const stockBirthdays = INITIAL_BIRTHDAYS.filter(b => b && b.name && !b.name.includes('Иванова'));
+      const stockBirthdays = sanitizeBirthdaysList(INITIAL_BIRTHDAYS);
       setBirthdays(stockBirthdays);
       localStorage.setItem('ierihon_birthdays', JSON.stringify(stockBirthdays));
       updateDocData('birthdays', stockBirthdays);
@@ -840,7 +871,7 @@ export default function App() {
       const emptyHw = {};
       const emptyDuties = { zones: [] };
       const emptyEvents: ClassEvent[] = [];
-      const stockBirthdays = INITIAL_BIRTHDAYS.filter(b => b && b.name && !b.name.includes('Иванова'));
+      const stockBirthdays = sanitizeBirthdaysList(INITIAL_BIRTHDAYS);
       const emptyPoll: PollData = {
         id: '1',
         created: '',
