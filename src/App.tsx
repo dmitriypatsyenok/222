@@ -38,9 +38,9 @@ import { subscribeToDoc, updateDocData } from './firebase';
 export function sanitizeBirthdaysList(rawList: any[]): BirthdayItem[] {
   if (!Array.isArray(rawList)) return [];
   return rawList
-    .filter(b => b && (b.name || b.nameBe) && !String(b.name).includes('Иванова') && !String(b.name).includes('Каверзникова') && !String(b.name).includes('Рыбарт'))
+    .filter(b => b && (b.name || b.nameBe || b.nameRu) && !String(b.name || '').includes('Иванова') && !String(b.name || '').includes('Каверзникова') && !String(b.name || '').includes('Рыбарт'))
     .map(b => {
-      let nameRu = String(b.name || '').trim();
+      let nameRu = String(b.name || b.nameRu || '').trim();
       let nameBe = b.nameBe ? String(b.nameBe).trim() : '';
 
       if (nameRu.includes(',')) {
@@ -56,6 +56,10 @@ export function sanitizeBirthdaysList(rawList: any[]): BirthdayItem[] {
         if (STUDENT_NAME_TRANSLATIONS[lower]?.be) {
           nameBe = STUDENT_NAME_TRANSLATIONS[lower].be;
         }
+      }
+
+      if (nameBe) {
+        nameBe = nameBe.replace(/Пацыёнак/g, 'Пацыенак').replace(/пацыёнак/g, 'пацыенак');
       }
 
       return {
@@ -1192,8 +1196,9 @@ export default function App() {
     try {
       const parsed = parseJsonData(data);
       if (!Array.isArray(parsed)) throw new Error('Файл дней рождения должен быть массивом');
-      setBirthdays(parsed);
-      updateDocData('birthdays', parsed);
+      const sanitized = sanitizeBirthdaysList(parsed);
+      setBirthdays(sanitized);
+      updateDocData('birthdays', sanitized);
       haptic('success');
       showToast(lang === 'be' ? 'Дні нараджэння загружаны!' : 'Список дней рождения обновлен!', 'success');
     } catch (err: any) {
