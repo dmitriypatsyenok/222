@@ -202,7 +202,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               {translate('today_birthdays', lang)}
             </div>
             <div className="text-xs text-white mt-0.5 font-medium truncate">
-              {todayBdays.map(b => getStudentDisplayName(b, lang)).join(', ')}
+              {todayBdays.map(b => b.name).join(', ')}
             </div>
           </div>
         </div>

@@ -162,8 +162,7 @@ export const DutiesView: React.FC<DutiesViewProps> = ({
     if (!f) return true;
     return (
       b.name.toLowerCase().includes(f) ||
-      (b.nameBe && b.nameBe.toLowerCase().includes(f)) ||
-      getStudentDisplayName(b, lang).toLowerCase().includes(f)
+      getStudentDisplayName(b.name, lang).toLowerCase().includes(f)
     );
   });
 

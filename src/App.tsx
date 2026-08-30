@@ -38,49 +38,17 @@ import { subscribeToDoc, updateDocData } from './firebase';
 export function sanitizeBirthdaysList(rawList: any[]): BirthdayItem[] {
   if (!Array.isArray(rawList)) return [];
   return rawList
-    .filter(b => b && (b.name || b.nameBe || b.nameRu) && !String(b.name || '').includes('Иванова') && !String(b.name || '').includes('Каверзникова') && !String(b.name || '').includes('Рыбарт'))
+    .filter(b => b && (b.name || b.nameRu) && !String(b.name || '').includes('Иванова') && !String(b.name || '').includes('Каверзникова') && !String(b.name || '').includes('Рыбарт'))
     .map(b => {
-      let nameRu = String(b.name || b.nameRu || '').trim();
-      let nameBe = b.nameBe ? String(b.nameBe).trim() : '';
-
-      if (nameRu.includes(',')) {
-        const parts = nameRu.split(',').map(s => s.trim()).filter(Boolean);
-        if (parts.length >= 2) {
-          const part1 = parts[0];
-          const part2 = parts[1];
-          const part2IsBe = /[ўі’'–—]|\bдз|\bдж/i.test(part2);
-          if (part2IsBe) {
-            nameRu = part1;
-            nameBe = part2;
-          } else {
-            nameRu = part2;
-            nameBe = part1;
-          }
-        }
+      let name = String(b.name || b.nameRu || '').trim();
+      if (name.includes(',')) {
+        name = name.split(',')[0].trim();
       }
-
-      const lowerRu = nameRu.toLowerCase();
-      if (STUDENT_NAME_TRANSLATIONS[lowerRu]) {
-        nameRu = STUDENT_NAME_TRANSLATIONS[lowerRu].ru;
-        if (!nameBe) {
-          nameBe = STUDENT_NAME_TRANSLATIONS[lowerRu].be;
-        }
+      if (name.toLowerCase() === 'пациёнок дима' || name.toLowerCase() === 'пацыёнак дзіма' || name.toLowerCase() === 'пацыенак дзіма') {
+        name = 'Пациенок Дима';
       }
-
-      if (!nameBe && nameRu) {
-        const lower = nameRu.toLowerCase();
-        if (STUDENT_NAME_TRANSLATIONS[lower]?.be) {
-          nameBe = STUDENT_NAME_TRANSLATIONS[lower].be;
-        }
-      }
-
-      if (nameBe) {
-        nameBe = nameBe.replace(/Пацыёнак/g, 'Пацыенак').replace(/пацыёнак/g, 'пацыенак');
-      }
-
       return {
-        name: nameRu,
-        nameBe: nameBe || undefined,
+        name,
         date: String(b.date || '').trim()
       };
     });
@@ -481,18 +449,17 @@ export default function App() {
         });
 
         if (todayBirthdays.length > 0) {
-          const namesRu = todayBirthdays.map(b => getStudentDisplayName(b, 'ru')).join(', ');
-          const namesBe = todayBirthdays.map(b => getStudentDisplayName(b, 'be')).join(', ');
+          const names = todayBirthdays.map(b => b.name).join(', ');
           const ruTitle = '🎂 День рождения сегодня!';
-          const ruMsg = `Сегодня празднует: ${namesRu}! Поздравляем! 🎉`;
+          const ruMsg = `Сегодня празднует: ${names}! Поздравляем! 🎉`;
           const beTitle = '🎂 Дзень нараджэння сёння!';
-          const beMsg = `Сёння святкуе: ${namesBe}! Віншуем! 🎉`;
+          const beMsg = `Сёння святкуе: ${names}! Віншуем! 🎉`;
 
           localStorage.setItem('ierihon_last_bday_notified', todayYMD);
           setBirthdaysNotified({ lastNotifiedDate: todayYMD });
           updateDocData('birthdays_notified', {
             lastNotifiedDate: todayYMD,
-            notifiedNames: namesRu,
+            notifiedNames: names,
             notifiedAt: new Date().toISOString()
           });
 

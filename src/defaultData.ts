@@ -1,22 +1,22 @@
 import { BirthdayItem, DutiesStore, HomeworkStore, ScheduleProfiles, SubjectMeta } from './types';
 
-// Restored complete list of student and teacher birthdays with Belarusian translations
+// Standard clean list of student and teacher birthdays
 export const INITIAL_BIRTHDAYS: BirthdayItem[] = [
-  { name: "Акрамова Сагдияна", nameBe: "Акрамава Сагдзіяна", date: "21.08" },
-  { name: "Дубовик Артем", nameBe: "Дубовік Арцём", date: "20.12" },
-  { name: "Дятлов Влад", nameBe: "Дзятлаў Улад", date: "11.03" },
-  { name: "Еремеева Ксюша", nameBe: "Ерамеева Ксюша", date: "22.07" },
-  { name: "Зайцева Алина", nameBe: "Зайцава Аліна", date: "28.12" },
-  { name: "Комар Влад", nameBe: "Камар Улад", date: "23.02" },
-  { name: "Овсяник Стеша", nameBe: "Аўсянік Сцеша", date: "08.06" },
-  { name: "Пациенок Дима", nameBe: "Пацыенак Дзіма", date: "06.04" },
-  { name: "Перевозникова Арина", nameBe: "Перавознікава Арына", date: "11.05" },
-  { name: "Самойлов Витя", nameBe: "Самойлаў Віця", date: "05.04" },
-  { name: "Цмыг Алёна", nameBe: "Цмыг Алёна", date: "07.01" },
-  { name: "Цмыг Яна", nameBe: "Цмыг Яна", date: "07.01" },
-  { name: "Щербич Вика", nameBe: "Шчэрбіч Віка", date: "12.01" },
-  { name: "Щигельская Вика", nameBe: "Шчыгельская Віка", date: "23.08" },
-  { name: "Дмитрий Александрович", nameBe: "Дзмітрый Аляксандравіч", date: "16.11" }
+  { name: "Акрамова Сагдияна", date: "21.08" },
+  { name: "Дубовик Артем", date: "20.12" },
+  { name: "Дятлов Влад", date: "11.03" },
+  { name: "Еремеева Ксюша", date: "22.07" },
+  { name: "Зайцева Алина", date: "28.12" },
+  { name: "Комар Влад", date: "23.02" },
+  { name: "Овсяник Стеша", date: "08.06" },
+  { name: "Пациенок Дима", date: "06.04" },
+  { name: "Перевозникова Арина", date: "11.05" },
+  { name: "Самойлов Витя", date: "05.04" },
+  { name: "Цмыг Алёна", date: "07.01" },
+  { name: "Цмыг Яна", date: "07.01" },
+  { name: "Щербич Вика", date: "12.01" },
+  { name: "Щигельская Вика", date: "23.08" },
+  { name: "Дмитрий Александрович", date: "16.11" }
 ];
 
 // Clean state for duties initially (empty zones by default)
