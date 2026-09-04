@@ -109,11 +109,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           {rawList.map((item, idx) => {
             let num = idx + 1;
             let nameStr = item;
-            const matchNum = item.match(/^(\d+)[\.\s]+(.*)/);
+            const matchNum = item.match(/^(\d+)[\.\)\s]+(.*)/);
             if (matchNum) {
               num = parseInt(matchNum[1], 10);
               nameStr = matchNum[2];
             }
+            nameStr = nameStr.replace(/[\.\s]+$/, '').trim();
 
             const meta = parseLessonName(nameStr, SUBJECT_DB);
             const displayName = meta[lang] || nameStr;

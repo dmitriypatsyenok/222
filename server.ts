@@ -95,6 +95,19 @@ async function checkAndSendBirthdayNotifications() {
         console.error('[Birthday Cron] Telegram API error:', err);
       } else {
         console.log(`[Birthday Cron] Successfully sent automated birthday notification for: ${names}`);
+        const data = await res.json().catch(() => null);
+        const messageId = data?.result?.message_id;
+        if (messageId) {
+          try {
+            await fetch(`https://api.telegram.org/bot${botToken}/pinChatMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chat_id: chatId, message_id: messageId })
+            });
+          } catch (pinErr) {
+            console.warn('[Birthday Cron] Failed to pin message in Telegram:', pinErr);
+          }
+        }
       }
     }
   } catch (e) {

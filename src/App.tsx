@@ -18,6 +18,7 @@ import {
   INITIAL_BIRTHDAYS,
   INITIAL_DUTIES,
   INITIAL_HW,
+  SCHEDULE_VERSION,
   SUBJECT_DB
 } from './defaultData';
 import { initTelegramApp, haptic, tg, getTelegramUserName, sendNotification } from './telegram';
@@ -121,9 +122,12 @@ export default function App() {
   // Schedules
   const [schedules, setSchedules] = useState<ScheduleProfiles>(() => {
     const saved = localStorage.getItem('ierihon_schedules');
-    if (saved) {
+    const savedVer = localStorage.getItem('ierihon_schedules_ver');
+    if (saved && savedVer === SCHEDULE_VERSION) {
       try { return JSON.parse(saved); } catch (e) { /* ignore */ }
     }
+    localStorage.setItem('ierihon_schedules', JSON.stringify(DEFAULT_SCHEDULES));
+    localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
     return DEFAULT_SCHEDULES;
   });
 
@@ -249,20 +253,28 @@ export default function App() {
   // Real-time Firebase Synchronization across devices
   useEffect(() => {
     // 1. Critical immediate subscriptions (main screen & settings)
-    const unsubSchedules = subscribeToDoc<ScheduleProfiles>(
+    const unsubSchedules = subscribeToDoc<any>(
       'schedules',
       data => {
         if (data && typeof data === 'object') {
-          if ('base' in data) {
-            const { base, ...rest } = data as any;
-            setSchedules(rest);
-            updateDocData('schedules', rest);
-          } else {
-            setSchedules(data);
+          if (data._version !== SCHEDULE_VERSION) {
+            const updated = { ...DEFAULT_SCHEDULES, _version: SCHEDULE_VERSION };
+            setSchedules(DEFAULT_SCHEDULES);
+            localStorage.setItem('ierihon_schedules', JSON.stringify(DEFAULT_SCHEDULES));
+            localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
+            updateDocData('schedules', updated);
+            return;
           }
+          const { _version, base, ...cleanData } = data;
+          setSchedules(cleanData);
+          localStorage.setItem('ierihon_schedules', JSON.stringify(cleanData));
+          localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
         }
       },
-      () => updateDocData('schedules', schedules)
+      () => {
+        const updated = { ...DEFAULT_SCHEDULES, _version: SCHEDULE_VERSION };
+        updateDocData('schedules', updated);
+      }
     );
     const unsubTgConfig = subscribeToDoc<{
       token: string;
@@ -837,7 +849,8 @@ export default function App() {
     if (confirm(lang === 'be' ? 'Скінуць расклад да пачатковага (стокавага)?' : 'Сбросить расписание до начального (стокового)?')) {
       setSchedules(DEFAULT_SCHEDULES);
       localStorage.setItem('ierihon_schedules', JSON.stringify(DEFAULT_SCHEDULES));
-      updateDocData('schedules', DEFAULT_SCHEDULES);
+      localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
+      updateDocData('schedules', { ...DEFAULT_SCHEDULES, _version: SCHEDULE_VERSION });
       haptic('success');
       showToast(lang === 'be' ? 'Расклад скінуты да пачатковага!' : 'Расписание сброшено до стокового!', 'success');
     }
@@ -893,6 +906,7 @@ export default function App() {
       setIsPollActive(false);
 
       localStorage.setItem('ierihon_schedules', JSON.stringify(DEFAULT_SCHEDULES));
+      localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
       localStorage.setItem('ierihon_active_profile', 'math');
       localStorage.setItem('ierihon_profile', 'math');
       localStorage.setItem('ierihon_homework', JSON.stringify(emptyHw));
@@ -903,7 +917,7 @@ export default function App() {
       localStorage.setItem('ierihon_poll_history', JSON.stringify(emptyPollHistory));
       localStorage.setItem('ierihon_poll_active', 'false');
 
-      updateDocData('schedules', DEFAULT_SCHEDULES);
+      updateDocData('schedules', { ...DEFAULT_SCHEDULES, _version: SCHEDULE_VERSION });
       updateDocData('homework', emptyHw);
       updateDocData('duties', emptyDuties);
       updateDocData('events', emptyEvents);

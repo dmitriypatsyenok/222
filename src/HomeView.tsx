@@ -33,21 +33,20 @@ function calculateWidgetData(
   const dayKey = dayKeysMap[dayOfWeek - 1];
   const sched = (schedules[activeProfile] || schedules.math || schedules.chem || Object.values(schedules || {})[0] || {})[dayKey] || [];
 
-  let lastLessonIdx = -1;
-  for (let i = sched.length - 1; i >= 0; i--) {
-    if (sched[i] && typeof sched[i] === 'string' && sched[i].trim()) {
-      lastLessonIdx = i;
-      break;
+  const getLessonForSlot = (num: number): string => {
+    for (const item of sched) {
+      if (!item) continue;
+      const m = item.match(/^(\d+)[\.\)\s]/);
+      if (m && parseInt(m[1], 10) === num) {
+        return item.replace(/^(\d+)[\.\)\s]+/, '').replace(/[\.\s]+$/, '').trim();
+      }
     }
-  }
-
-  if (lastLessonIdx === -1) {
-    return {
-      iconType: 'coffee',
-      title: translate('no_lessons', lang),
-      sub: lang === 'be' ? 'На сёння ўрокаў няма' : 'На сегодня уроков нет'
-    };
-  }
+    const hasAnyExplicit = sched.some((s: string) => /^(\d+)[\.\)\s]/.test(s));
+    if (!hasAnyExplicit && sched[num - 1]) {
+      return sched[num - 1].replace(/[\.\s]+$/, '').trim();
+    }
+    return '';
+  };
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const timeTable = [
@@ -61,17 +60,37 @@ function calculateWidgetData(
     { num: 8, start: 14 * 60 + 40, end: 15 * 60 + 25 }
   ];
 
-  const lastSlotIdx = Math.min(lastLessonIdx, timeTable.length - 1);
+  let firstSlotIdx = -1;
+  let lastSlotIdx = -1;
+  for (let i = 0; i < timeTable.length; i++) {
+    const lesson = getLessonForSlot(timeTable[i].num);
+    if (lesson.trim()) {
+      if (firstSlotIdx === -1) firstSlotIdx = i;
+      lastSlotIdx = i;
+    }
+  }
+
+  if (firstSlotIdx === -1) {
+    return {
+      iconType: 'coffee',
+      title: translate('no_lessons', lang),
+      sub: lang === 'be' ? 'На сёння ўрокаў няма' : 'На сегодня уроков нет'
+    };
+  }
+
   const lastSlotEnd = timeTable[lastSlotIdx].end;
 
-  if (currentMinutes < timeTable[0].start) {
-    const firstLessonStr = sched[0] || '';
+  if (currentMinutes < timeTable[firstSlotIdx].start) {
+    const firstLessonStr = getLessonForSlot(timeTable[firstSlotIdx].num);
     const meta = parseLessonName(firstLessonStr, SUBJECT_DB);
     const nameText = meta[lang] || firstLessonStr;
+    const startMins = timeTable[firstSlotIdx].start;
+    const hh = String(Math.floor(startMins / 60)).padStart(2, '0');
+    const mm = String(startMins % 60).padStart(2, '0');
     return {
       iconType: 'sun',
       title: lang === 'be' ? 'Урокі яшчэ не пачаліся' : 'Уроки еще не начались',
-      sub: `${lang === 'be' ? 'Першы ўрок у 08:00: ' : 'Первый урок в 08:00: '}${nameText}`
+      sub: `${lang === 'be' ? `Першы ўрок (${timeTable[firstSlotIdx].num}-ы) у ` : `Первый урок (${timeTable[firstSlotIdx].num}-й) в `}${hh}:${mm}: ${nameText}`
     };
   }
 
@@ -83,11 +102,11 @@ function calculateWidgetData(
     };
   }
 
-  for (let i = 0; i <= lastSlotIdx; i++) {
+  for (let i = firstSlotIdx; i <= lastSlotIdx; i++) {
     const slot = timeTable[i];
     if (currentMinutes >= slot.start && currentMinutes <= slot.end) {
       const left = slot.end - currentMinutes;
-      const lessonStr = sched[i] || '';
+      const lessonStr = getLessonForSlot(slot.num);
       if (!lessonStr.trim()) {
         return {
           iconType: 'coffee',
@@ -109,7 +128,7 @@ function calculateWidgetData(
       const nextSlot = timeTable[i + 1];
       if (currentMinutes > slot.end && currentMinutes < nextSlot.start) {
         const left = nextSlot.start - currentMinutes;
-        const nextLessonStr = sched[i + 1] || '';
+        const nextLessonStr = getLessonForSlot(nextSlot.num);
         const meta = parseLessonName(nextLessonStr, SUBJECT_DB);
         const nameText = meta[lang] || nextLessonStr || (lang === 'be' ? 'Аконька' : 'Окно');
         return {

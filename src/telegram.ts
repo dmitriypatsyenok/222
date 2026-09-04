@@ -104,7 +104,7 @@ export async function sendNotification(
         text += `\n👉${appUrl}`;
       }
 
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,6 +117,25 @@ export async function sendNotification(
           }
         })
       });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const messageId = data?.result?.message_id;
+        if (messageId) {
+          try {
+            await fetch(`https://api.telegram.org/bot${botToken}/pinChatMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                message_id: messageId
+              })
+            });
+          } catch (pinErr) {
+            console.warn('Telegram pinChatMessage notice:', pinErr);
+          }
+        }
+      }
     } catch (e) {
       console.warn('Telegram Bot API notify error:', e);
     }

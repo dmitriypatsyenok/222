@@ -164,6 +164,21 @@ export function parseLessonName(rawName: string, subjectDb: Record<string, any> 
     return subjectDb.pe || { key: "pe", ru: "Физкультура", be: "Фізічная культура", ic: "" };
   }
 
+  // 8. Допризывная подготовка
+  if (n.includes('доприз') || n.includes('дапрыз')) {
+    return subjectDb.dopriz || { key: "dopriz", ru: "Допризывная подготовка", be: "Дапрызыўная падрыхтоўка", ic: "" };
+  }
+
+  // 9. Медицинская подготовка
+  if (n.includes('медицин') || n.includes('медыцын') || n.includes('мед')) {
+    return subjectDb.med || { key: "med", ru: "Медицинская подготовка", be: "Медыцынская падрыхтоўка", ic: "" };
+  }
+
+  // 10. Информационный час
+  if (n.includes('инф') && (n.includes('час') || n.includes('гадз'))) {
+    return subjectDb.inf_hr || { key: "inf_hr", ru: "Инф. час", be: "Інф. гадзіна", ic: "" };
+  }
+
   for (let key in subjectDb) {
     const item = subjectDb[key];
     if (!item) continue;
@@ -311,6 +326,7 @@ export function parseAndNormalizeSchedule(rawInput: any): ScheduleProfiles {
   }
 
   keys.forEach(pKey => {
+    if (pKey === '_version') return;
     const item = parsed[pKey];
     if (item && typeof item === 'object' && !Array.isArray(item)) {
       const profileTitle = typeof item.title === 'string' && item.title.trim()
