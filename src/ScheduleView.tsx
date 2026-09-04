@@ -2,7 +2,7 @@ import React from 'react';
 import { DayKey, Language, ProfileKey, ScheduleProfiles, ScreenType } from './types';
 import { translate, getProfileFullTitle } from './i18n';
 import { LESSON_TIMES, SUBJECT_DB } from './defaultData';
-import { parseLessonName } from './dateFormatter';
+import { parseLessonName, getValidProfileKeys } from './dateFormatter';
 import { ChevronRight, Ruler, BookOpen, FlaskConical } from 'lucide-react';
 
 interface ScheduleViewProps {
@@ -25,11 +25,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   onSelectProfile,
   onSelectDay
 }) => {
-  const allProfileKeys = Object.keys(schedules || {}).filter(k => k !== 'base');
-  const profileKeys = [
-    ...['math', 'chem'].filter(k => allProfileKeys.includes(k)),
-    ...allProfileKeys.filter(k => !['math', 'chem'].includes(k))
-  ] as ProfileKey[];
+  const profileKeys = getValidProfileKeys(schedules);
   const dayKeys: DayKey[] = ['pn', 'vt', 'sr', 'cht', 'pt'];
 
   if (viewMode === 'profiles') {

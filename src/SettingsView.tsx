@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { BirthdayItem, DayKey, DutiesStore, HomeworkStore, Language, PollData, ProfileKey, ScheduleProfiles, Theme } from './types';
 import { translate, getProfileFullTitle } from './i18n';
+import { getValidProfileKeys } from './dateFormatter';
 import { haptic } from './telegram';
 import { Download, Upload, Trash2, Check, Bell, Save, BookOpen, Ruler, FlaskConical, Moon, Sun, RotateCcw, Sparkles, Palette, Zap, Calendar, Gift, ClipboardList, Utensils, AlertTriangle, Shield } from 'lucide-react';
 
@@ -127,11 +128,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const formatScheduleForExport = (scheds: ScheduleProfiles) => {
     const dayKeys: DayKey[] = ['pn', 'vt', 'sr', 'cht', 'pt'];
-    const allKeys = Object.keys(scheds || {});
-    const sortedKeys = [
-      ...['base', 'math', 'chem'].filter(k => allKeys.includes(k)),
-      ...allKeys.filter(k => !['base', 'math', 'chem'].includes(k))
-    ];
+    const sortedKeys = getValidProfileKeys(scheds);
 
     const formatted: Record<string, any> = {};
     sortedKeys.forEach(pKey => {
@@ -308,11 +305,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
         <div className="space-y-2">
           {(() => {
-            const allProfileKeys = Object.keys(schedules || {}).filter(k => k !== 'base');
-            const profileKeys = [
-              ...['math', 'chem'].filter(k => allProfileKeys.includes(k)),
-              ...allProfileKeys.filter(k => !['math', 'chem'].includes(k))
-            ] as ProfileKey[];
+            const profileKeys = getValidProfileKeys(schedules);
 
             return profileKeys.map(pKey => {
               const isSelected = activeProfile === pKey;

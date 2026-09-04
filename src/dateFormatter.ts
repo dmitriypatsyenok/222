@@ -1,5 +1,5 @@
-import { Language, DayKey, ScheduleProfiles } from './types';
-import { SUBJECT_DB } from './defaultData';
+import { Language, DayKey, ScheduleProfiles, ProfileKey } from './types';
+import { SUBJECT_DB, DEFAULT_SCHEDULES } from './defaultData';
 
 const MONTHS_RU_NOM = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
 const MONTHS_RU_GEN = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
@@ -326,12 +326,12 @@ export function parseAndNormalizeSchedule(rawInput: any): ScheduleProfiles {
   }
 
   keys.forEach(pKey => {
-    if (pKey === '_version') return;
+    if (!pKey || pKey.startsWith('_') || pKey === 'base' || pKey === 'undefined') return;
     const item = parsed[pKey];
     if (item && typeof item === 'object' && !Array.isArray(item)) {
       const profileTitle = typeof item.title === 'string' && item.title.trim()
         ? item.title.trim()
-        : (pKey === 'base' ? 'База' : pKey === 'math' ? 'Математика' : pKey === 'chem' ? 'Химия' : pKey);
+        : (pKey === 'math' ? 'Математика' : pKey === 'chem' ? 'Химия' : pKey);
 
       const profileObj: any = {
         title: profileTitle
@@ -356,4 +356,52 @@ export function parseAndNormalizeSchedule(rawInput: any): ScheduleProfiles {
   }
 
   return result;
+}
+
+export function getValidProfileKeys(schedules: ScheduleProfiles | any): ProfileKey[] {
+  if (!schedules || typeof schedules !== 'object') return ['math', 'chem'];
+  const allKeys = Object.keys(schedules).filter(k => {
+    if (!k || k.startsWith('_') || k === 'base' || k === 'undefined' || k === 'null') return false;
+    const item = schedules[k];
+    return item && typeof item === 'object' && !Array.isArray(item);
+  });
+
+  const prioritized = ['math', 'chem'];
+  const validProfiles = [
+    ...prioritized.filter(k => allKeys.includes(k)),
+    ...allKeys.filter(k => !prioritized.includes(k))
+  ];
+  return validProfiles.length > 0 ? validProfiles : ['math', 'chem'];
+}
+
+export function sanitizeScheduleProfiles(raw: any): ScheduleProfiles {
+  if (!raw || typeof raw !== 'object') return DEFAULT_SCHEDULES;
+  const clean: ScheduleProfiles = {};
+  const dayKeys: DayKey[] = ['pn', 'vt', 'sr', 'cht', 'pt'];
+
+  for (const k of Object.keys(raw)) {
+    if (!k || k.startsWith('_') || k === 'base' || k === 'undefined' || k === 'null') continue;
+    const item = raw[k];
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      const title = typeof item.title === 'string' && item.title.trim()
+        ? item.title.trim()
+        : (k === 'math' ? 'Математика' : k === 'chem' ? 'Химия' : k);
+
+      const prof: any = { title };
+      dayKeys.forEach(d => {
+        if (Array.isArray(item[d])) {
+          prof[d] = item[d].map((s: any) => String(s));
+        } else if (typeof item[d] === 'string') {
+          prof[d] = item[d].split('\n').filter((s: string) => s.trim());
+        } else {
+          prof[d] = [];
+        }
+      });
+      clean[k] = prof;
+    }
+  }
+
+  if (!clean.math) clean.math = DEFAULT_SCHEDULES.math;
+  if (!clean.chem) clean.chem = DEFAULT_SCHEDULES.chem;
+  return clean;
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DayKey, HomeworkItem, HomeworkStore, Language, ProfileKey, ScheduleProfiles, ScreenType } from './types';
 import { translate, getProfileTitle } from './i18n';
 import { LESSON_TIMES, SUBJECT_LIST, SUBJECT_DB } from './defaultData';
-import { formatCustomDate, getNextLessonDate, parseLessonName, extractSubjectKey } from './dateFormatter';
+import { formatCustomDate, getNextLessonDate, parseLessonName, extractSubjectKey, getValidProfileKeys } from './dateFormatter';
 import { Search, ChevronRight, Edit2, Trash2, Calendar, Plus, Globe, BookOpen } from 'lucide-react';
 import { haptic } from './telegram';
 
@@ -101,10 +101,8 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({
   const dayKeys: DayKey[] = ['pn', 'vt', 'sr', 'cht', 'pt'];
   const daysDict = translate('t_days_s', lang) as any;
 
-  // Profile keys list
-  const availableProfileKeys = (schedules && Object.keys(schedules).length > 0)
-    ? (Object.keys(schedules).filter(k => k !== 'base') as ProfileKey[])
-    : ['math', 'chem'];
+  // Profile keys list (strictly filtered to valid profiles, never showing internal or meta keys)
+  const availableProfileKeys = getValidProfileKeys(schedules);
   const effectiveProfile = availableProfileKeys.includes(activeProfile) ? activeProfile : (availableProfileKeys[0] || 'math');
 
   const getSubjectHwListLocal = (subjKey: string) => {

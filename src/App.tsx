@@ -31,7 +31,7 @@ import { EventsView } from './EventsView';
 import { DutiesView } from './DutiesView';
 import { BirthdaysView } from './BirthdaysView';
 import { SettingsView } from './SettingsView';
-import { parseAndNormalizeSchedule, extractSubjectKey, getNextSchoolDay, getNextLessonDate, parseLocalDate, formatLocalDateToYYYYMMDD } from './dateFormatter';
+import { parseAndNormalizeSchedule, extractSubjectKey, getNextSchoolDay, getNextLessonDate, parseLocalDate, formatLocalDateToYYYYMMDD, getValidProfileKeys, sanitizeScheduleProfiles } from './dateFormatter';
 import { translate, getProfileFullTitle, translateZoneName, getStudentDisplayName, STUDENT_NAME_TRANSLATIONS } from './i18n';
 import { Users, Calendar } from 'lucide-react';
 import { subscribeToDoc, updateDocData } from './firebase';
@@ -124,7 +124,10 @@ export default function App() {
     const saved = localStorage.getItem('ierihon_schedules');
     const savedVer = localStorage.getItem('ierihon_schedules_ver');
     if (saved && savedVer === SCHEDULE_VERSION) {
-      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      try {
+        const parsed = JSON.parse(saved);
+        return sanitizeScheduleProfiles(parsed);
+      } catch (e) { /* ignore */ }
     }
     localStorage.setItem('ierihon_schedules', JSON.stringify(DEFAULT_SCHEDULES));
     localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
@@ -132,11 +135,9 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (schedules && Object.keys(schedules).length > 0) {
-      const keys = Object.keys(schedules);
-      if (!keys.includes(activeProfile)) {
-        setActiveProfile(keys[0] as ProfileKey);
-      }
+    const validKeys = getValidProfileKeys(schedules);
+    if (!validKeys.includes(activeProfile)) {
+      setActiveProfile(validKeys[0] || 'math');
     }
   }, [schedules, activeProfile]);
 
@@ -257,23 +258,22 @@ export default function App() {
       'schedules',
       data => {
         if (data && typeof data === 'object') {
-          if (data._version !== SCHEDULE_VERSION) {
-            const updated = { ...DEFAULT_SCHEDULES, _version: SCHEDULE_VERSION };
-            setSchedules(DEFAULT_SCHEDULES);
-            localStorage.setItem('ierihon_schedules', JSON.stringify(DEFAULT_SCHEDULES));
-            localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
-            updateDocData('schedules', updated);
-            return;
-          }
-          const { _version, base, ...cleanData } = data;
-          setSchedules(cleanData);
-          localStorage.setItem('ierihon_schedules', JSON.stringify(cleanData));
+          const hasStrayKeys = '_version' in data || 'base' in data;
+          const isOutdated = data._version && data._version !== SCHEDULE_VERSION;
+
+          const sanitized = isOutdated ? DEFAULT_SCHEDULES : sanitizeScheduleProfiles(data);
+          setSchedules(sanitized);
+          localStorage.setItem('ierihon_schedules', JSON.stringify(sanitized));
           localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
+
+          // If the Firestore document has _version, base, or is outdated, write back the clean object!
+          if (hasStrayKeys || isOutdated) {
+            updateDocData('schedules', sanitized);
+          }
         }
       },
       () => {
-        const updated = { ...DEFAULT_SCHEDULES, _version: SCHEDULE_VERSION };
-        updateDocData('schedules', updated);
+        updateDocData('schedules', DEFAULT_SCHEDULES);
       }
     );
     const unsubTgConfig = subscribeToDoc<{
@@ -850,7 +850,7 @@ export default function App() {
       setSchedules(DEFAULT_SCHEDULES);
       localStorage.setItem('ierihon_schedules', JSON.stringify(DEFAULT_SCHEDULES));
       localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
-      updateDocData('schedules', { ...DEFAULT_SCHEDULES, _version: SCHEDULE_VERSION });
+      updateDocData('schedules', DEFAULT_SCHEDULES);
       haptic('success');
       showToast(lang === 'be' ? 'Расклад скінуты да пачатковага!' : 'Расписание сброшено до стокового!', 'success');
     }
@@ -917,7 +917,7 @@ export default function App() {
       localStorage.setItem('ierihon_poll_history', JSON.stringify(emptyPollHistory));
       localStorage.setItem('ierihon_poll_active', 'false');
 
-      updateDocData('schedules', { ...DEFAULT_SCHEDULES, _version: SCHEDULE_VERSION });
+      updateDocData('schedules', DEFAULT_SCHEDULES);
       updateDocData('homework', emptyHw);
       updateDocData('duties', emptyDuties);
       updateDocData('events', emptyEvents);
@@ -1145,9 +1145,9 @@ export default function App() {
       setSchedules(normalized);
       updateDocData('schedules', normalized);
 
-      const availKeys = Object.keys(normalized) as ProfileKey[];
+      const availKeys = getValidProfileKeys(normalized);
       if (!availKeys.includes(activeProfile)) {
-        setActiveProfile(availKeys[0] || 'base');
+        setActiveProfile(availKeys[0] || 'math');
       }
 
       haptic('success');

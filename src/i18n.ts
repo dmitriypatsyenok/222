@@ -331,6 +331,7 @@ export function translate(key: string, lang: Language): string {
 }
 
 export function getProfileTitle(pKey: string, schedules?: any, lang: Language = 'ru'): string {
+  if (!pKey || pKey.startsWith('_') || pKey === 'undefined') return '';
   const customTitle = schedules?.[pKey]?.title;
   if (lang === 'be') {
     if (pKey === 'base' || customTitle === 'База' || customTitle === 'Базовый' || customTitle === 'Базавы') return 'База';
@@ -352,6 +353,7 @@ export function getProfileTitle(pKey: string, schedules?: any, lang: Language = 
 }
 
 export function getProfileFullTitle(pKey: string, schedules?: any, lang: Language = 'ru'): string {
+  if (!pKey || pKey.startsWith('_') || pKey === 'undefined') return '';
   const customTitle = schedules?.[pKey]?.title;
   if (lang === 'be') {
     if (pKey === 'base' || customTitle === 'База' || customTitle === 'Базовый' || customTitle === 'Базавы') return 'Базавы';
