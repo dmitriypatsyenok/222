@@ -72,7 +72,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const [tgToken, setTgToken] = useState(() => tgConfig?.token || localStorage.getItem('ierihon_tg_token') || '');
   const [tgChatId, setTgChatId] = useState(() => tgConfig?.chatId || localStorage.getItem('ierihon_tg_chat_id') || '');
-  const [tgAppUrl, setTgAppUrl] = useState(() => tgConfig?.appUrl || localStorage.getItem('ierihon_tg_app_url') || 'https://t.me/ierihon_testbot/app');
+  const [tgAppUrl, setTgAppUrl] = useState(() => {
+    const val = tgConfig?.appUrl || localStorage.getItem('ierihon_tg_app_url');
+    if (val && !val.includes('ierihon_testbot') && !val.includes('workers.dev')) {
+      return val;
+    }
+    return 'https://t.me/Ierihon_chat_bot/Ierihon';
+  });
   const [savedTgMsg, setSavedTgMsg] = useState(false);
   const [webhookLoading, setWebhookLoading] = useState(false);
   const [webhookStatus, setWebhookStatus] = useState<{ success: boolean; msg: string } | null>(null);
@@ -693,6 +699,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               placeholder={translate('tg_chat_id_ph', lang)}
               className="w-full bg-[#18181C] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder-[#555] focus:outline-none focus:border-zinc-400 transition-all"
             />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-semibold text-[#888] block mb-1">
+              {lang === 'be' ? 'Спасылка на Mini App (для апавяшчэнняў):' : 'Ссылка на Mini App (для уведомлений):'}
+            </label>
+            <input
+              type="text"
+              value={tgAppUrl}
+              onChange={e => setTgAppUrl(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveTg();
+                }
+              }}
+              placeholder="https://t.me/Ierihon_chat_bot/Ierihon"
+              className="w-full bg-[#18181C] border border-[#27272A] rounded-xl px-3 py-2 text-xs text-white placeholder-[#555] focus:outline-none focus:border-zinc-400 transition-all"
+            />
+            <p className="text-[10px] text-zinc-500 mt-1">
+              {lang === 'be'
+                ? 'Дадаецца ў канцы паведамленняў без папярэдняга прагляду (акрамя віншаванняў)'
+                : 'Добавляется в конце сообщений со скрытым предпросмотром ссылки (кроме поздравлений)'}
+            </p>
           </div>
 
           <div className="flex flex-col gap-2 pt-2">

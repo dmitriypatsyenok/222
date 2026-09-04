@@ -235,7 +235,13 @@ export default function App() {
   }>(() => ({
     token: localStorage.getItem('ierihon_tg_token') || '',
     chatId: localStorage.getItem('ierihon_tg_chat_id') || '',
-    appUrl: localStorage.getItem('ierihon_tg_app_url') || 'https://t.me/ierihon_testbot/app',
+    appUrl: (() => {
+      const stored = localStorage.getItem('ierihon_tg_app_url');
+      if (stored && !stored.includes('ierihon_testbot') && !stored.includes('workers.dev')) {
+        return stored;
+      }
+      return 'https://t.me/Ierihon_chat_bot/Ierihon';
+    })(),
     autoDelete: localStorage.getItem('ierihon_tg_auto_delete') !== 'false',
     deleteDelay: Number(localStorage.getItem('ierihon_tg_delete_delay')) || 30
   }));
@@ -271,7 +277,11 @@ export default function App() {
           setTgConfig(data);
           if (data.token) localStorage.setItem('ierihon_tg_token', data.token);
           if (data.chatId) localStorage.setItem('ierihon_tg_chat_id', data.chatId);
-          if (data.appUrl) localStorage.setItem('ierihon_tg_app_url', data.appUrl);
+          if (data.appUrl && !data.appUrl.includes('ierihon_testbot') && !data.appUrl.includes('workers.dev')) {
+            localStorage.setItem('ierihon_tg_app_url', data.appUrl);
+          } else {
+            localStorage.setItem('ierihon_tg_app_url', 'https://t.me/Ierihon_chat_bot/Ierihon');
+          }
           if (data.autoDelete !== undefined) localStorage.setItem('ierihon_tg_auto_delete', String(data.autoDelete));
           if (data.deleteDelay !== undefined) localStorage.setItem('ierihon_tg_delete_delay', String(data.deleteDelay));
         }
@@ -467,7 +477,8 @@ export default function App() {
             lang === 'be' ? beTitle : ruTitle,
             lang === 'be' ? beMsg : ruMsg,
             ruTitle,
-            ruMsg
+            ruMsg,
+            { isBirthday: true }
           );
         }
       }

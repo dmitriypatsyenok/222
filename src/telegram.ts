@@ -41,11 +41,17 @@ export function getTelegramUserName(defaultLang: 'ru' | 'be'): string {
   return defaultLang === 'be' ? 'Вучань' : 'Ученик';
 }
 
+export interface SendNotificationOptions {
+  isBirthday?: boolean;
+  disableLink?: boolean;
+}
+
 export async function sendNotification(
   title: string,
   message: string,
   tgTitle?: string,
-  tgMessage?: string
+  tgMessage?: string,
+  options?: SendNotificationOptions
 ) {
   haptic('success');
 
@@ -73,19 +79,42 @@ export async function sendNotification(
   const botToken = localStorage.getItem('ierihon_tg_token');
   const chatId = localStorage.getItem('ierihon_tg_chat_id');
 
+  let appUrl = localStorage.getItem('ierihon_tg_app_url') || 'https://t.me/Ierihon_chat_bot/Ierihon';
+  if (appUrl.includes('ierihon_testbot') || appUrl.includes('workers.dev')) {
+    appUrl = 'https://t.me/Ierihon_chat_bot/Ierihon';
+    localStorage.setItem('ierihon_tg_app_url', appUrl);
+  }
+
   const finalTgTitle = tgTitle || title;
   const finalTgMessage = tgMessage || message;
 
+  // Birthday messages should NOT have the mini app link appended
+  const isBday = Boolean(
+    options?.isBirthday ||
+    finalTgTitle.toLowerCase().includes('день рождения') ||
+    finalTgTitle.toLowerCase().includes('дзень нараджэння') ||
+    title.toLowerCase().includes('день рождения') ||
+    title.toLowerCase().includes('дзень нараджэння')
+  );
+
   if (botToken && chatId) {
     try {
-      const text = `<b>${finalTgTitle}</b>\n${finalTgMessage}`;
+      let text = `<b>${finalTgTitle}</b>\n${finalTgMessage}`;
+      if (!isBday && !options?.disableLink && !text.includes('👉')) {
+        text += `\n👉${appUrl}`;
+      }
+
       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: chatId,
           text: text,
-          parse_mode: 'HTML'
+          parse_mode: 'HTML',
+          disable_web_page_preview: true,
+          link_preview_options: {
+            is_disabled: true
+          }
         })
       });
     } catch (e) {
