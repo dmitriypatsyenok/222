@@ -102,11 +102,15 @@ export default function App() {
     }
   }, [theme]);
 
-  const [activeProfile, setActiveProfile] = useState<ProfileKey>(() => {
+  const [userProfile, setUserProfile] = useState<ProfileKey>(() => {
     const saved = localStorage.getItem('ierihon_profile');
     if (saved === 'math' || saved === 'chem') return saved;
     return 'math';
   });
+
+  // Transient viewing profiles for Homework and Schedule tabs
+  const [hwProfile, setHwProfile] = useState<ProfileKey>(userProfile);
+  const [scheduleProfile, setScheduleProfile] = useState<ProfileKey>(userProfile);
 
   const getTodayDayKey = (): DayKey => {
     const day = new Date().getDay();
@@ -136,10 +140,16 @@ export default function App() {
 
   useEffect(() => {
     const validKeys = getValidProfileKeys(schedules);
-    if (!validKeys.includes(activeProfile)) {
-      setActiveProfile(validKeys[0] || 'math');
+    if (!validKeys.includes(userProfile)) {
+      setUserProfile(validKeys[0] || 'math');
     }
-  }, [schedules, activeProfile]);
+    if (!validKeys.includes(hwProfile)) {
+      setHwProfile(validKeys[0] || 'math');
+    }
+    if (!validKeys.includes(scheduleProfile)) {
+      setScheduleProfile(validKeys[0] || 'math');
+    }
+  }, [schedules, userProfile, hwProfile, scheduleProfile]);
 
   // Homework
   const [homework, setHomework] = useState<HomeworkStore>(() => {
@@ -435,8 +445,8 @@ export default function App() {
   }, [lang]);
 
   useEffect(() => {
-    localStorage.setItem('ierihon_profile', activeProfile);
-  }, [activeProfile]);
+    localStorage.setItem('ierihon_profile', userProfile);
+  }, [userProfile]);
 
   useEffect(() => {
     localStorage.setItem('ierihon_schedules', JSON.stringify(schedules));
@@ -536,6 +546,11 @@ export default function App() {
 
   // Navigation Handlers
   const handleNavigate = (screen: ScreenType) => {
+    if (screen === 'hw') {
+      setHwProfile(userProfile);
+    } else if (screen === 'schedule') {
+      setScheduleProfile(userProfile);
+    }
     setScreenHistory(prev => [...prev, screen]);
     haptic('light');
   };
@@ -702,7 +717,7 @@ export default function App() {
       const currentList = prev[subjectKey] || [];
       const baseKey = extractSubjectKey(subjectKey);
       const existingDueDates = currentList.map(item => item.due).filter(Boolean);
-      const dueISO = customDueDate || getNextLessonDate(baseKey, schedules, activeProfile, existingDueDates);
+      const dueISO = customDueDate || getNextLessonDate(baseKey, schedules, hwProfile, existingDueDates);
       const newItem = {
         id: Date.now().toString(),
         text,
@@ -731,9 +746,9 @@ export default function App() {
       isProf = false;
     } else {
       if (['math', 'algebra', 'geometry'].includes(baseKey)) {
-        isProf = activeProfile === 'math';
+        isProf = hwProfile === 'math';
       } else if (baseKey === 'chem') {
-        isProf = activeProfile === 'chem';
+        isProf = hwProfile === 'chem';
       }
     }
 
@@ -902,7 +917,9 @@ export default function App() {
       const emptyPollHistory: PollData[] = [];
 
       setSchedules(DEFAULT_SCHEDULES);
-      setActiveProfile('math');
+      setUserProfile('math');
+      setHwProfile('math');
+      setScheduleProfile('math');
       setHomework(emptyHw);
       setDuties(emptyDuties);
       setEvents(emptyEvents);
@@ -1152,8 +1169,14 @@ export default function App() {
       updateDocData('schedules', normalized);
 
       const availKeys = getValidProfileKeys(normalized);
-      if (!availKeys.includes(activeProfile)) {
-        setActiveProfile(availKeys[0] || 'math');
+      if (!availKeys.includes(userProfile)) {
+        setUserProfile(availKeys[0] || 'math');
+      }
+      if (!availKeys.includes(hwProfile)) {
+        setHwProfile(availKeys[0] || 'math');
+      }
+      if (!availKeys.includes(scheduleProfile)) {
+        setScheduleProfile(availKeys[0] || 'math');
       }
 
       haptic('success');
@@ -1222,6 +1245,15 @@ export default function App() {
     }
   };
 
+  // Handle user preference profile change from Settings
+  const handleSetUserProfile = (p: ProfileKey) => {
+    setUserProfile(p);
+    setHwProfile(p);
+    setScheduleProfile(p);
+    localStorage.setItem('ierihon_profile', p);
+    haptic('selection');
+  };
+
   // Render Screen Content
   const renderScreen = () => {
     switch (currentScreen) {
@@ -1230,7 +1262,7 @@ export default function App() {
           <HomeView
             birthdays={birthdays}
             schedules={schedules}
-            activeProfile={activeProfile}
+            activeProfile={userProfile}
             lang={lang}
             onNavigate={handleNavigate}
           />
@@ -1241,11 +1273,11 @@ export default function App() {
           <ScheduleView
             viewMode="profiles"
             schedules={schedules}
-            activeProfile={activeProfile}
+            activeProfile={scheduleProfile}
             activeDay={activeDay}
             lang={lang}
             onSelectProfile={p => {
-              setActiveProfile(p);
+              setScheduleProfile(p);
               handleNavigate('schedule-days');
             }}
             onSelectDay={setActiveDay}
@@ -1258,10 +1290,10 @@ export default function App() {
           <ScheduleView
             viewMode="days"
             schedules={schedules}
-            activeProfile={activeProfile}
+            activeProfile={scheduleProfile}
             activeDay={activeDay}
             lang={lang}
-            onSelectProfile={setActiveProfile}
+            onSelectProfile={setScheduleProfile}
             onSelectDay={setActiveDay}
             onNavigate={handleNavigate}
           />
@@ -1273,11 +1305,11 @@ export default function App() {
             viewMode="main"
             homeworkStore={homework}
             schedules={schedules}
-            activeProfile={activeProfile}
+            activeProfile={hwProfile}
             activeSubjectKey={activeSubjectKey}
             activeHwDay={activeHwDay}
             lang={lang}
-            onSelectProfile={setActiveProfile}
+            onSelectProfile={setHwProfile}
             onSelectSubject={setActiveSubjectKey}
             onSelectHwDay={setActiveHwDay}
             onNavigate={handleNavigate}
@@ -1293,11 +1325,11 @@ export default function App() {
             viewMode="subjects"
             homeworkStore={homework}
             schedules={schedules}
-            activeProfile={activeProfile}
+            activeProfile={hwProfile}
             activeSubjectKey={activeSubjectKey}
             activeHwDay={activeHwDay}
             lang={lang}
-            onSelectProfile={setActiveProfile}
+            onSelectProfile={setHwProfile}
             onSelectSubject={setActiveSubjectKey}
             onSelectHwDay={setActiveHwDay}
             onNavigate={handleNavigate}
@@ -1313,11 +1345,11 @@ export default function App() {
             viewMode="detail"
             homeworkStore={homework}
             schedules={schedules}
-            activeProfile={activeProfile}
+            activeProfile={hwProfile}
             activeSubjectKey={activeSubjectKey}
             activeHwDay={activeHwDay}
             lang={lang}
-            onSelectProfile={setActiveProfile}
+            onSelectProfile={setHwProfile}
             onSelectSubject={setActiveSubjectKey}
             onSelectHwDay={setActiveHwDay}
             onNavigate={handleNavigate}
@@ -1497,9 +1529,9 @@ export default function App() {
             lang={lang}
             theme={theme}
             schedules={schedules}
-            activeProfile={activeProfile}
+            activeProfile={userProfile}
             onSetTheme={handleSetTheme}
-            onSetProfile={setActiveProfile}
+            onSetProfile={handleSetUserProfile}
             homework={homework}
             duties={duties}
             birthdays={birthdays}
@@ -1527,7 +1559,13 @@ export default function App() {
   };
 
   const getProfileName = (): string => {
-    return getProfileFullTitle(activeProfile, schedules, lang);
+    if (currentScreen === 'schedule-days') {
+      return getProfileFullTitle(scheduleProfile, schedules, lang);
+    }
+    if (currentScreen === 'hw' || currentScreen === 'hw-subjects' || currentScreen === 'hw-detail') {
+      return getProfileFullTitle(hwProfile, schedules, lang);
+    }
+    return getProfileFullTitle(userProfile, schedules, lang);
   };
 
   return (
