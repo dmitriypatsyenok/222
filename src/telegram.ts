@@ -44,6 +44,7 @@ export function getTelegramUserName(defaultLang: 'ru' | 'be'): string {
 export interface SendNotificationOptions {
   isBirthday?: boolean;
   disableLink?: boolean;
+  noPin?: boolean;
 }
 
 export async function sendNotification(
@@ -97,6 +98,17 @@ export async function sendNotification(
     title.toLowerCase().includes('дзень нараджэння')
   );
 
+  // Homework notifications should NEVER be pinned
+  const isHomework = Boolean(
+    options?.noPin ||
+    finalTgTitle.toLowerCase().includes('домашнее задание') ||
+    finalTgTitle.toLowerCase().includes('дамашняе заданне') ||
+    finalTgTitle.toLowerCase().includes('дз') ||
+    title.toLowerCase().includes('домашнее задание') ||
+    title.toLowerCase().includes('дамашняе заданне') ||
+    title.toLowerCase().includes('дз')
+  );
+
   if (botToken && chatId) {
     try {
       let text = `<b>${finalTgTitle}</b>\n${finalTgMessage}`;
@@ -121,7 +133,8 @@ export async function sendNotification(
       if (res.ok) {
         const data = await res.json().catch(() => null);
         const messageId = data?.result?.message_id;
-        if (messageId) {
+        // Pin important announcements (birthdays, duty, polls, events), but do NOT pin homework
+        if (messageId && !isHomework && !options?.noPin) {
           try {
             await fetch(`https://api.telegram.org/bot${botToken}/pinChatMessage`, {
               method: 'POST',

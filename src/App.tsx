@@ -260,14 +260,19 @@ export default function App() {
         if (data && typeof data === 'object') {
           const hasStrayKeys = '_version' in data || 'base' in data;
           const isOutdated = data._version && data._version !== SCHEDULE_VERSION;
+          const chemCht = data?.chem?.cht;
+          const needsChemThursdayFix = Array.isArray(chemCht) && (
+            chemCht.some((lesson: string) => lesson.toLowerCase().includes('геометр') && lesson.startsWith('3')) ||
+            chemCht.length < 7
+          );
 
           const sanitized = isOutdated ? DEFAULT_SCHEDULES : sanitizeScheduleProfiles(data);
           setSchedules(sanitized);
           localStorage.setItem('ierihon_schedules', JSON.stringify(sanitized));
           localStorage.setItem('ierihon_schedules_ver', SCHEDULE_VERSION);
 
-          // If the Firestore document has _version, base, or is outdated, write back the clean object!
-          if (hasStrayKeys || isOutdated) {
+          // If the Firestore document has _version, base, or needs Thursday chem fix, write back the clean object!
+          if (hasStrayKeys || isOutdated || needsChemThursdayFix) {
             updateDocData('schedules', sanitized);
           }
         }
@@ -745,7 +750,8 @@ export default function App() {
       lang === 'be' ? beTitle : ruTitle,
       lang === 'be' ? beMsg : ruMsg,
       ruTitle,
-      ruMsg
+      ruMsg,
+      { noPin: true }
     );
   };
 

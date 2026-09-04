@@ -403,5 +403,15 @@ export function sanitizeScheduleProfiles(raw: any): ScheduleProfiles {
 
   if (!clean.math) clean.math = DEFAULT_SCHEDULES.math;
   if (!clean.chem) clean.chem = DEFAULT_SCHEDULES.chem;
+
+  // Auto-correct Thursday chem schedule if it has outdated 3. Геометрия or is missing 7. Геометрия
+  if (clean.chem && Array.isArray(clean.chem.cht)) {
+    const hasOldGeomAsThird = clean.chem.cht.some((s: string) => s.toLowerCase().includes('геометр') && s.startsWith('3'));
+    const isMissingSeventh = clean.chem.cht.length < 7;
+    if (hasOldGeomAsThird || isMissingSeventh) {
+      clean.chem.cht = [...DEFAULT_SCHEDULES.chem.cht];
+    }
+  }
+
   return clean;
 }

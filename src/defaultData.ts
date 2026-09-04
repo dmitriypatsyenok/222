@@ -31,7 +31,7 @@ export const INITIAL_DUTIES: DutiesStore = {
 // Clean state for homework initially
 export const INITIAL_HW: HomeworkStore = {};
 
-export const SCHEDULE_VERSION = '2026_09_v3';
+export const SCHEDULE_VERSION = '2026_09_v4';
 
 export const DEFAULT_SCHEDULES: ScheduleProfiles = {
   math: {
@@ -111,10 +111,11 @@ export const DEFAULT_SCHEDULES: ScheduleProfiles = {
     cht: [
       "1. Инф. час",
       "2. Химия",
-      "3. Геометрия",
+      "3. Информатика",
       "4. Русский язык",
       "5. Русский язык",
-      "6. История"
+      "6. История",
+      "7. Геометрия"
     ],
     pt: [
       "1. Геометрия",
