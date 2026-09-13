@@ -327,81 +327,69 @@ export default function App() {
           setCurrentPoll(data);
           setSelectedPollDetail(prev => (prev && prev.id === data.id ? data : prev));
         }
-      },
-      () => updateDocData('currentPoll', currentPoll)
+      }
     );
 
-    // 2. Secondary subscriptions queued with a micro-delay to keep UI at 60 FPS on mobile startup
-    let unsubDuties: () => void = () => {};
-    let unsubBirthdays: () => void = () => {};
-    let unsubEvents: () => void = () => {};
-    let unsubPollHistory: () => void = () => {};
-    let unsubIsPollActive: () => void = () => {};
-
-    const timer = setTimeout(() => {
-      unsubDuties = subscribeToDoc<DutiesStore>(
-        'duties',
-        data => { if (data && typeof data === 'object') setDuties(data); },
-        () => updateDocData('duties', duties)
-      );
-      unsubBirthdays = subscribeToDoc<BirthdayItem[]>(
-        'birthdays',
-        data => {
-          if (Array.isArray(data)) {
-            const cleaned = sanitizeBirthdaysList(data);
-            setBirthdays(cleaned);
-            if (JSON.stringify(cleaned) !== JSON.stringify(data)) {
-              updateDocData('birthdays', cleaned);
-            }
-          }
-        },
-        () => updateDocData('birthdays', birthdays)
-      );
-      subscribeToDoc<{ lastNotifiedDate?: string }>(
-        'birthdays_notified',
-        data => {
-          if (data && typeof data === 'object') {
-            setBirthdaysNotified(data);
-            if (data.lastNotifiedDate) {
-              localStorage.setItem('ierihon_last_bday_notified', data.lastNotifiedDate);
-            }
+    const unsubDuties = subscribeToDoc<DutiesStore>(
+      'duties',
+      data => { if (data && typeof data === 'object') setDuties(data); },
+      () => updateDocData('duties', duties)
+    );
+    const unsubBirthdays = subscribeToDoc<BirthdayItem[]>(
+      'birthdays',
+      data => {
+        if (Array.isArray(data)) {
+          const cleaned = sanitizeBirthdaysList(data);
+          setBirthdays(cleaned);
+          if (JSON.stringify(cleaned) !== JSON.stringify(data)) {
+            updateDocData('birthdays', cleaned);
           }
         }
-      );
-      unsubEvents = subscribeToDoc<ClassEvent[]>(
-        'events',
-        data => { if (Array.isArray(data)) setEvents(data); },
-        () => updateDocData('events', events)
-      );
-      unsubPollHistory = subscribeToDoc<PollData[]>(
-        'pollHistory',
-        data => {
-          if (Array.isArray(data)) {
-            setPollHistory(data);
-            setSelectedPollDetail(prev => {
-              if (!prev) return prev;
-              const updated = data.find(p => p.id === prev.id);
-              return updated || prev;
-            });
+      },
+      () => updateDocData('birthdays', birthdays)
+    );
+    const unsubBirthdaysNotified = subscribeToDoc<{ lastNotifiedDate?: string }>(
+      'birthdays_notified',
+      data => {
+        if (data && typeof data === 'object') {
+          setBirthdaysNotified(data);
+          if (data.lastNotifiedDate) {
+            localStorage.setItem('ierihon_last_bday_notified', data.lastNotifiedDate);
           }
-        },
-        () => updateDocData('pollHistory', pollHistory)
-      );
-      unsubIsPollActive = subscribeToDoc<boolean>(
-        'isPollActive',
-        data => { if (typeof data === 'boolean') setIsPollActive(data); },
-        () => updateDocData('isPollActive', isPollActive)
-      );
-    }, 60);
+        }
+      }
+    );
+    const unsubEvents = subscribeToDoc<ClassEvent[]>(
+      'events',
+      data => { if (Array.isArray(data)) setEvents(data); },
+      () => updateDocData('events', events)
+    );
+    const unsubPollHistory = subscribeToDoc<PollData[]>(
+      'pollHistory',
+      data => {
+        if (Array.isArray(data)) {
+          setPollHistory(data);
+          setSelectedPollDetail(prev => {
+            if (!prev) return prev;
+            const updated = data.find(p => p.id === prev.id);
+            return updated || prev;
+          });
+        }
+      }
+    );
+    const unsubIsPollActive = subscribeToDoc<boolean>(
+      'isPollActive',
+      data => { if (typeof data === 'boolean') setIsPollActive(data); }
+    );
 
     return () => {
-      clearTimeout(timer);
       unsubSchedules();
       unsubTgConfig();
       unsubHomework();
       unsubPoll();
       unsubDuties();
       unsubBirthdays();
+      unsubBirthdaysNotified();
       unsubEvents();
       unsubPollHistory();
       unsubIsPollActive();
@@ -557,7 +545,8 @@ export default function App() {
 
   const handleBack = () => {
     if (screenHistory.length <= 1) return;
-    setScreenHistory(prev => prev.slice(0, prev.length - 1));
+    const prevHistory = screenHistory.slice(0, screenHistory.length - 1);
+    setScreenHistory(prevHistory);
     haptic('light');
   };
 
@@ -982,17 +971,15 @@ export default function App() {
       targetDate = formatLocalDateToYYYYMMDD(candidate);
     }
 
-    let updatedHistory = pollHistory;
-    if (currentPoll && currentPoll.voters && currentPoll.voters.length > 0 && currentPoll.id !== '1') {
-      const idx = pollHistory.findIndex(p => p.id === currentPoll.id);
+    // Save currentPoll to history if valid
+    let updatedHistory = [...pollHistory];
+    if (currentPoll && currentPoll.date && currentPoll.id && currentPoll.id !== '1' && currentPoll.id !== 'poll_init') {
+      const idx = updatedHistory.findIndex(p => p.id === currentPoll.id || p.date === currentPoll.date);
       if (idx >= 0) {
-        updatedHistory = [...pollHistory];
         updatedHistory[idx] = { ...currentPoll };
       } else {
-        updatedHistory = [currentPoll, ...pollHistory];
+        updatedHistory = [{ ...currentPoll }, ...updatedHistory];
       }
-      setPollHistory(updatedHistory);
-      updateDocData('pollHistory', updatedHistory);
     }
 
     const newPoll: PollData = {
@@ -1005,9 +992,14 @@ export default function App() {
       voters: []
     };
 
+    // Immediately include newPoll in history so it is permanently preserved
+    const finalHistory = [newPoll, ...updatedHistory.filter(p => p.id !== newPoll.id && p.date !== newPoll.date)];
+
     setCurrentPoll(newPoll);
-    updateDocData('currentPoll', newPoll);
+    setPollHistory(finalHistory);
     setIsPollActive(true);
+    updateDocData('currentPoll', newPoll);
+    updateDocData('pollHistory', finalHistory);
     updateDocData('isPollActive', true);
     handleNavigate('canteen-poll');
 
@@ -1060,19 +1052,21 @@ export default function App() {
     setCurrentPoll(updatedPoll);
     updateDocData('currentPoll', updatedPoll);
 
-    // Also update pollHistory if this poll exists in pollHistory
+    // Also update pollHistory
     setPollHistory(prev => {
-      const idx = prev.findIndex(p => p.id === updatedPoll.id);
+      const idx = prev.findIndex(p => p.id === updatedPoll.id || (updatedPoll.date && p.date === updatedPoll.date));
+      let nextHist: PollData[];
       if (idx >= 0) {
-        const nextHist = [...prev];
+        nextHist = [...prev];
         nextHist[idx] = updatedPoll;
-        updateDocData('pollHistory', nextHist);
-        return nextHist;
+      } else {
+        nextHist = [updatedPoll, ...prev];
       }
-      return prev;
+      updateDocData('pollHistory', nextHist);
+      return nextHist;
     });
 
-    if (selectedPollDetail && selectedPollDetail.id === updatedPoll.id) {
+    if (selectedPollDetail && (selectedPollDetail.id === updatedPoll.id || selectedPollDetail.date === updatedPoll.date)) {
       setSelectedPollDetail(updatedPoll);
     }
 
@@ -1117,11 +1111,11 @@ export default function App() {
 
     setSelectedPollDetail(updatedPoll);
 
-    const updatedHistory = pollHistory.map(p => (p.id === updatedPoll.id ? updatedPoll : p));
+    const updatedHistory = pollHistory.map(p => (p.id === updatedPoll.id || (p.date && p.date === updatedPoll.date) ? updatedPoll : p));
     setPollHistory(updatedHistory);
     updateDocData('pollHistory', updatedHistory);
 
-    if (currentPoll.id === updatedPoll.id) {
+    if (currentPoll && (currentPoll.id === updatedPoll.id || currentPoll.date === updatedPoll.date)) {
       setCurrentPoll(updatedPoll);
       updateDocData('currentPoll', updatedPoll);
     }

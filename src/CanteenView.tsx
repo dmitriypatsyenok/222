@@ -39,6 +39,7 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
   onVotePastPoll
 }) => {
   const userName = getTelegramUserName(lang);
+  const effectiveIsPollActive = isPollActive || Boolean(currentPoll && currentPoll.id && currentPoll.id !== 'poll_init' && currentPoll.date);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [canteenMsg, setCanteenMsg] = useState<string | null>(null);
@@ -181,6 +182,10 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
   if (viewMode === 'menu') {
     return (
       <div className="space-y-3.5 animate-fade-in">
+        <div className="text-[10px] font-bold text-[#888] uppercase tracking-widest px-1">
+          {translate('t_food', lang)}
+        </div>
+
         <div className="space-y-2.5">
           {/* Create Poll Card */}
           <div
@@ -211,7 +216,7 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
           {/* Vote Button */}
           <div
             onClick={() => {
-              if (!isPollActive) {
+              if (!effectiveIsPollActive) {
                 setCanteenMsg(translate('poll_not_created_msg', lang));
                 haptic('error');
                 return;
@@ -219,14 +224,14 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
               onNavigate('canteen-poll');
             }}
             className={`flex items-center gap-3.5 border rounded-3xl p-4 cursor-pointer transition-all active:scale-[0.99] group ${
-              isPollActive
+              effectiveIsPollActive
                 ? 'bg-[#121215] border-[#27272A] hover:border-zinc-500 hover:bg-[#18181C]'
                 : 'bg-[#121215]/60 border-[#27272A] opacity-75'
             }`}
           >
             <div
               className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
-                isPollActive
+                effectiveIsPollActive
                   ? 'bg-zinc-800 border-zinc-700 text-white'
                   : 'bg-rose-500/15 border-rose-500/20 text-rose-400'
               }`}
@@ -389,10 +394,22 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
   }
 
   if (viewMode === 'history') {
-    let allPollsHistory = [...pollHistory];
-    if (isPollActive && currentPoll && !allPollsHistory.some(p => p.id === currentPoll.id)) {
-      allPollsHistory.unshift(currentPoll);
+    const map = new Map<string, PollData>();
+    if (currentPoll && currentPoll.date && currentPoll.id && currentPoll.id !== '1' && currentPoll.id !== 'poll_init') {
+      map.set(currentPoll.id, currentPoll);
     }
+    pollHistory.forEach(p => {
+      if (p && p.id) {
+        if (!map.has(p.id)) {
+          map.set(p.id, p);
+        }
+      }
+    });
+    const allPollsHistory = Array.from(map.values()).sort((a, b) => {
+      const tA = a.date ? new Date(a.date).getTime() : 0;
+      const tB = b.date ? new Date(b.date).getTime() : 0;
+      return tB - tA;
+    });
 
     return (
       <div className="space-y-3.5 animate-fade-in">
@@ -430,6 +447,8 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
               const nPct = totalVoters > 0 ? Math.round(((p.no || 0) / totalVoters) * 100) : 0;
               const aPct = totalVoters > 0 ? (100 - ePct - nPct) : 0;
 
+              const isCurrentActive = isPollActive && currentPoll && (p.id === currentPoll.id || (currentPoll.date && p.date === currentPoll.date));
+
               return (
                 <div
                   key={p.id}
@@ -437,21 +456,33 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
                     onSelectPollDetail(p, targetStr);
                     onNavigate('canteen-result');
                   }}
-                  className="bg-[#121215] border border-[#27272A] rounded-2xl p-3.5 cursor-pointer hover:bg-[#18181C] hover:border-zinc-500 transition-all active:scale-[0.99] group space-y-2.5 shadow-sm"
+                  className={`bg-[#121215] border rounded-2xl p-3.5 cursor-pointer hover:bg-[#18181C] transition-all active:scale-[0.99] group space-y-2.5 shadow-sm ${
+                    isCurrentActive ? 'border-emerald-500/40 hover:border-emerald-500/60' : 'border-[#27272A] hover:border-zinc-500'
+                  }`}
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center shrink-0 font-bold text-xs">
+                    <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 font-bold text-xs ${
+                      isCurrentActive ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-zinc-800 border-zinc-700 text-white'
+                    }`}>
                       📅
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-white truncate">
-                        {translate('poll_for', lang)} {targetStr}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-white truncate">
+                          {translate('poll_for', lang)} {targetStr}
+                        </span>
+                        {isCurrentActive && (
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            {translate('active_poll_badge', lang)}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-[#888] mt-0.5">
                         {translate('created', lang)} {createdStr}
                       </div>
                     </div>
-                    <div className="text-xs font-bold text-white bg-zinc-800 border border-zinc-700 px-2.5 py-1 rounded-xl">
+                    <div className="text-xs font-bold text-white bg-zinc-800 border border-zinc-700 px-2.5 py-1 rounded-xl shrink-0">
                       {totalVoters} 👥
                     </div>
                   </div>
@@ -785,6 +816,11 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
 
   return (
     <div className="space-y-3.5 animate-fade-in">
+      {/* Top Poll Info */}
+      <div className="text-[10px] font-bold text-[#888] uppercase tracking-widest px-1">
+        {selectedPollDateStr || (activePoll.date ? formatCustomDate(activePoll.date, 'day_month_long', lang) : translate('poll_results', lang))}
+      </div>
+
       {/* Interactive Category Filter Cards */}
       <div className="grid grid-cols-3 gap-2.5">
         <button
