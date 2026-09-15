@@ -61,8 +61,16 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
 
   // Compute aggregated stats for analytics
   const allPollsMap = new Map<string, PollData>();
-  if (currentPoll && currentPoll.id) allPollsMap.set(currentPoll.id, currentPoll);
-  pollHistory.forEach(p => { if (p && p.id) allPollsMap.set(p.id, p); });
+  if (currentPoll && currentPoll.id && currentPoll.id !== 'poll_init' && currentPoll.date) {
+    allPollsMap.set(currentPoll.date, currentPoll);
+  }
+  pollHistory.forEach(p => {
+    if (p && p.id && p.id !== 'poll_init' && p.date) {
+      if (!allPollsMap.has(p.date)) {
+        allPollsMap.set(p.date, p);
+      }
+    }
+  });
   const allPolls = Array.from(allPollsMap.values()).sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
   // Extract available months for dropdown selector
@@ -214,40 +222,57 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
           )}
 
           {/* Vote Button */}
-          <div
-            onClick={() => {
-              if (!effectiveIsPollActive) {
-                setCanteenMsg(translate('poll_not_created_msg', lang));
-                haptic('error');
-                return;
-              }
-              onNavigate('canteen-poll');
-            }}
-            className={`flex items-center gap-3.5 border rounded-3xl p-4 cursor-pointer transition-all active:scale-[0.99] group ${
-              effectiveIsPollActive
-                ? 'bg-[#121215] border-[#27272A] hover:border-zinc-500 hover:bg-[#18181C]'
-                : 'bg-[#121215]/60 border-[#27272A] opacity-75'
-            }`}
-          >
-            <div
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
-                effectiveIsPollActive
-                  ? 'bg-zinc-800 border-zinc-700 text-white'
-                  : 'bg-rose-500/15 border-rose-500/20 text-rose-400'
-              }`}
-            >
-              <Edit3 className="w-5 h-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-white">
-                {translate('poll_vote', lang)}
+          {(() => {
+            const myVoteInCurrent = (currentPoll?.voters || []).find(x => x.name === userName)?.status;
+            return (
+              <div
+                onClick={() => {
+                  if (!effectiveIsPollActive) {
+                    setCanteenMsg(translate('poll_not_created_msg', lang));
+                    haptic('error');
+                    return;
+                  }
+                  onNavigate('canteen-poll');
+                }}
+                className={`flex items-center gap-3.5 border rounded-3xl p-4 cursor-pointer transition-all active:scale-[0.99] group ${
+                  effectiveIsPollActive
+                    ? 'bg-[#121215] border-[#27272A] hover:border-zinc-500 hover:bg-[#18181C]'
+                    : 'bg-[#121215]/60 border-[#27272A] opacity-75'
+                }`}
+              >
+                <div
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                    effectiveIsPollActive
+                      ? 'bg-zinc-800 border-zinc-700 text-white'
+                      : 'bg-rose-500/15 border-rose-500/20 text-rose-400'
+                  }`}
+                >
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">
+                      {translate('poll_vote', lang)}
+                    </span>
+                    {effectiveIsPollActive && currentPoll?.date && (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        {formatCustomDate(currentPoll.date, 'day_month_short', lang)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-[#888] mt-0.5 truncate">
+                    {effectiveIsPollActive && currentPoll?.date
+                      ? (myVoteInCurrent
+                          ? `${lang === 'be' ? 'Ваш выбар' : 'Ваш выбор'}: ${myVoteInCurrent === 'eat' ? translate('v_eat', lang) : myVoteInCurrent === 'no' ? translate('v_no', lang) : translate('v_abs', lang)}`
+                          : translate('poll_vote_d', lang))
+                      : translate('poll_not_created_msg', lang)}
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
               </div>
-              <div className="text-xs text-[#888] mt-0.5">
-                {translate('poll_vote_d', lang)}
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
-          </div>
+            );
+          })()}
 
           {/* Results Archive Button */}
           <div
@@ -326,7 +351,8 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
   if (viewMode === 'poll') {
     const createdStr = formatCustomDate(currentPoll.created, 'day_month_short', lang);
     const targetStr = formatCustomDate(currentPoll.date, 'day_month_long', lang);
-    const myVote = (currentPoll.voters.find(x => x.name === userName) || {}).status;
+    const myVote = (currentPoll?.voters || []).find(x => x.name === userName)?.status;
+    const totalVotes = (currentPoll.eat || 0) + (currentPoll.no || 0) + (currentPoll.abs || 0);
 
     return (
       <div className="space-y-3.5 animate-fade-in">
@@ -389,19 +415,42 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Results Button */}
+        <div className="pt-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              onSelectPollDetail(currentPoll, targetStr);
+              onNavigate('canteen-result');
+            }}
+            className="w-full py-3 px-4 rounded-2xl bg-[#121215] border border-[#27272A] hover:bg-[#18181C] hover:border-zinc-500 text-xs font-bold text-white flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer shadow-sm"
+          >
+            <div className="flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-zinc-400" />
+              <span>{translate('poll_results', lang)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              <span className="text-[11px] font-medium">
+                {totalVotes} {lang === 'be' ? 'удзельнікаў' : 'участников'}
+              </span>
+              <ChevronRight className="w-4 h-4 text-zinc-500" />
+            </div>
+          </button>
+        </div>
       </div>
     );
   }
 
   if (viewMode === 'history') {
     const map = new Map<string, PollData>();
-    if (currentPoll && currentPoll.date && currentPoll.id && currentPoll.id !== '1' && currentPoll.id !== 'poll_init') {
-      map.set(currentPoll.id, currentPoll);
+    if (currentPoll && currentPoll.date && currentPoll.id && currentPoll.id !== 'poll_init') {
+      map.set(currentPoll.date, currentPoll);
     }
     pollHistory.forEach(p => {
-      if (p && p.id) {
-        if (!map.has(p.id)) {
-          map.set(p.id, p);
+      if (p && p.date && p.id && p.id !== 'poll_init') {
+        if (!map.has(p.date)) {
+          map.set(p.date, p);
         }
       }
     });
@@ -447,11 +496,11 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
               const nPct = totalVoters > 0 ? Math.round(((p.no || 0) / totalVoters) * 100) : 0;
               const aPct = totalVoters > 0 ? (100 - ePct - nPct) : 0;
 
-              const isCurrentActive = isPollActive && currentPoll && (p.id === currentPoll.id || (currentPoll.date && p.date === currentPoll.date));
+              const isCurrentActive = effectiveIsPollActive && currentPoll && (p.id === currentPoll.id || (currentPoll.date && p.date === currentPoll.date));
 
               return (
                 <div
-                  key={p.id}
+                  key={p.id || p.date}
                   onClick={() => {
                     onSelectPollDetail(p, targetStr);
                     onNavigate('canteen-result');
@@ -483,7 +532,11 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
                       </div>
                     </div>
                     <div className="text-xs font-bold text-white bg-zinc-800 border border-zinc-700 px-2.5 py-1 rounded-xl shrink-0">
-                      {totalVoters} 👥
+                      {totalVoters === 0 ? (
+                        <span className="text-amber-400 text-[11px] font-semibold">{lang === 'be' ? '0 галасоў' : '0 голосов'}</span>
+                      ) : (
+                        <span>{totalVoters} 👥</span>
+                      )}
                     </div>
                   </div>
 
@@ -802,7 +855,7 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
 
   // Result Mode
   const activePoll = selectedPollDetail || currentPoll;
-  const myVoteInPast = (activePoll.voters?.find(x => x.name === userName) || {}).status;
+  const myVoteInPast = (activePoll?.voters || []).find(x => x.name === userName)?.status;
 
   const totalPollVotes = (activePoll.eat || 0) + (activePoll.no || 0) + (activePoll.abs || 0);
   const pEatPct = totalPollVotes > 0 ? Math.round(((activePoll.eat || 0) / totalPollVotes) * 100) : 0;
