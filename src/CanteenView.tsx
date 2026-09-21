@@ -4,6 +4,7 @@ import { translate, getStudentDisplayName } from './i18n';
 import { formatCustomDate, getNextSchoolDay, formatMonthYear, parseLocalDate, formatLocalDateToYYYYMMDD } from './dateFormatter';
 import { Vote, BarChart2, CheckCircle2, XCircle, Home, Edit3, ChevronRight, Calendar, TrendingUp, PieChart, Users, Award, Filter, Sparkles, Utensils, UserX, AlertTriangle } from 'lucide-react';
 import { haptic, getTelegramUserName } from './telegram';
+import { cleanAndSortPolls } from './pollManager';
 
 interface CanteenViewProps {
   viewMode: 'menu' | 'poll' | 'history' | 'result';
@@ -59,19 +60,8 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
     setVoterFilter('all');
   }, [viewMode, selectedPollDetail]);
 
-  // Compute aggregated stats for analytics
-  const allPollsMap = new Map<string, PollData>();
-  if (currentPoll && currentPoll.id && currentPoll.id !== 'poll_init' && currentPoll.date) {
-    allPollsMap.set(currentPoll.date, currentPoll);
-  }
-  pollHistory.forEach(p => {
-    if (p && p.id && p.id !== 'poll_init' && p.date) {
-      if (!allPollsMap.has(p.date)) {
-        allPollsMap.set(p.date, p);
-      }
-    }
-  });
-  const allPolls = Array.from(allPollsMap.values()).sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+  // Compute aggregated stats for analytics using centralized clean & sort
+  const allPolls = cleanAndSortPolls([currentPoll, ...pollHistory]);
 
   // Extract available months for dropdown selector
   const monthsSet = new Set<string>();
@@ -443,22 +433,7 @@ export const CanteenView: React.FC<CanteenViewProps> = ({
   }
 
   if (viewMode === 'history') {
-    const map = new Map<string, PollData>();
-    if (currentPoll && currentPoll.date && currentPoll.id && currentPoll.id !== 'poll_init') {
-      map.set(currentPoll.date, currentPoll);
-    }
-    pollHistory.forEach(p => {
-      if (p && p.date && p.id && p.id !== 'poll_init') {
-        if (!map.has(p.date)) {
-          map.set(p.date, p);
-        }
-      }
-    });
-    const allPollsHistory = Array.from(map.values()).sort((a, b) => {
-      const tA = a.date ? new Date(a.date).getTime() : 0;
-      const tB = b.date ? new Date(b.date).getTime() : 0;
-      return tB - tA;
-    });
+    const allPollsHistory = allPolls;
 
     return (
       <div className="space-y-3.5 animate-fade-in">

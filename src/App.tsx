@@ -35,6 +35,7 @@ import { parseAndNormalizeSchedule, extractSubjectKey, getNextSchoolDay, getNext
 import { translate, getProfileFullTitle, translateZoneName, getStudentDisplayName, STUDENT_NAME_TRANSLATIONS } from './i18n';
 import { Users, Calendar } from 'lucide-react';
 import { subscribeToDoc, updateDocData } from './firebase';
+import { cleanAndSortPolls, normalizePoll, castVote, createOrActivatePoll, deletePoll, getEmptyPoll } from './pollManager';
 
 export function sanitizeBirthdaysList(rawList: any[]): BirthdayItem[] {
   if (!Array.isArray(rawList)) return [];
@@ -206,23 +207,13 @@ export default function App() {
   });
 
   // Polls
-  const [isPollActive, setIsPollActive] = useState<boolean>(() => {
-    const active = localStorage.getItem('ierihon_poll_active');
-    if (active !== null) return active === 'true';
-    const savedPoll = localStorage.getItem('ierihon_current_poll');
-    if (savedPoll) {
-      try {
-        const p = JSON.parse(savedPoll);
-        return Boolean(p && p.id && p.id !== 'poll_init' && p.date);
-      } catch (e) {}
-    }
-    return false;
-  });
-
   const [pollHistory, setPollHistory] = useState<PollData[]>(() => {
     const saved = localStorage.getItem('ierihon_poll_history');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return cleanAndSortPolls(parsed);
+      } catch (e) { /* ignore */ }
     }
     return [];
   });
@@ -232,17 +223,17 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.id && parsed.id !== 'poll_init' && parsed.date) {
-          return parsed;
-        }
+        const valid = normalizePoll(parsed);
+        if (valid) return valid;
       } catch (e) { /* ignore */ }
     }
     const savedHistory = localStorage.getItem('ierihon_poll_history');
     if (savedHistory) {
       try {
         const parsedHist = JSON.parse(savedHistory);
-        if (Array.isArray(parsedHist) && parsedHist.length > 0 && parsedHist[0].id) {
-          return parsedHist[0];
+        if (Array.isArray(parsedHist)) {
+          const cleaned = cleanAndSortPolls(parsedHist);
+          if (cleaned.length > 0) return cleaned[0];
         }
       } catch (e) { /* ignore */ }
     }
@@ -256,6 +247,19 @@ export default function App() {
       abs: 0,
       voters: []
     };
+  });
+
+  const [isPollActive, setIsPollActive] = useState<boolean>(() => {
+    const active = localStorage.getItem('ierihon_poll_active');
+    if (active !== null) return active === 'true';
+    const savedPoll = localStorage.getItem('ierihon_current_poll');
+    if (savedPoll) {
+      try {
+        const p = JSON.parse(savedPoll);
+        return Boolean(p && p.id && p.id !== 'poll_init' && p.date);
+      } catch (e) {}
+    }
+    return false;
   });
 
   const [birthdaysNotified, setBirthdaysNotified] = useState<{
@@ -346,20 +350,12 @@ export default function App() {
     const unsubPoll = subscribeToDoc<PollData>(
       'currentPoll',
       data => {
-        if (data && typeof data === 'object' && data.id && data.id !== 'poll_init' && data.date) {
-          setCurrentPoll(data);
+        const valid = normalizePoll(data);
+        if (valid) {
+          setCurrentPoll(valid);
           setIsPollActive(true);
-          setSelectedPollDetail(prev => (prev && prev.id === data.id ? data : prev));
-          setPollHistory(prev => {
-            const list = Array.isArray(prev) ? prev : [];
-            const idx = list.findIndex(p => p.id === data.id || (data.date && p.date === data.date));
-            if (idx >= 0) {
-              const copy = [...list];
-              copy[idx] = data;
-              return copy;
-            }
-            return [data, ...list];
-          });
+          setSelectedPollDetail(prev => (prev && (prev.id === valid.id || prev.date === valid.date) ? valid : prev));
+          setPollHistory(prev => cleanAndSortPolls([valid, ...(Array.isArray(prev) ? prev : [])]));
         }
       }
     );
@@ -401,26 +397,23 @@ export default function App() {
     const unsubPollHistory = subscribeToDoc<PollData[]>(
       'pollHistory',
       data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const validPolls = data.filter(p => p && p.id && p.id !== 'poll_init' && p.date);
-          validPolls.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        if (Array.isArray(data)) {
+          const cleaned = cleanAndSortPolls(data);
+          setPollHistory(cleaned);
 
-          setPollHistory(validPolls);
           setSelectedPollDetail(prev => {
             if (!prev) return prev;
-            const updated = validPolls.find(p => p.id === prev.id);
-            return updated || prev;
+            return cleaned.find(p => p.id === prev.id || (prev.date && p.date === prev.date)) || prev;
           });
 
           // Ensure currentPoll is synchronized with the latest valid poll
           setCurrentPoll(prevCurrent => {
+            if (cleaned.length === 0) return prevCurrent;
             if (!prevCurrent || !prevCurrent.id || prevCurrent.id === 'poll_init' || !prevCurrent.date) {
-              if (validPolls[0]) {
-                setIsPollActive(true);
-                return validPolls[0];
-              }
+              setIsPollActive(true);
+              return cleaned[0];
             }
-            const matching = validPolls.find(p => p.id === prevCurrent.id || (prevCurrent.date && p.date === prevCurrent.date));
+            const matching = cleaned.find(p => p.id === prevCurrent.id || (prevCurrent.date && p.date === prevCurrent.date));
             if (matching) {
               return matching;
             }
@@ -880,36 +873,27 @@ export default function App() {
 
   const handleDeletePoll = (pollId: string) => {
     if (confirm(translate('confirm_delete_poll', lang))) {
-      const nextHist = pollHistory.filter(p => p.id !== pollId);
-      setPollHistory(nextHist);
-      updateDocData('pollHistory', nextHist);
-      localStorage.setItem('ierihon_poll_history', JSON.stringify(nextHist));
+      const { updatedPolls, nextActivePoll } = deletePoll(pollHistory, pollId);
+      setPollHistory(updatedPolls);
+      localStorage.setItem('ierihon_poll_history', JSON.stringify(updatedPolls));
+      updateDocData('pollHistory', updatedPolls);
 
-      if (currentPoll.id === pollId) {
-        if (nextHist.length > 0) {
-          const nextPoll = nextHist[0];
-          setCurrentPoll(nextPoll);
+      if (currentPoll && currentPoll.id === pollId) {
+        if (nextActivePoll) {
+          setCurrentPoll(nextActivePoll);
           setIsPollActive(true);
-          updateDocData('currentPoll', nextPoll);
-          updateDocData('isPollActive', true);
-          localStorage.setItem('ierihon_current_poll', JSON.stringify(nextPoll));
+          localStorage.setItem('ierihon_current_poll', JSON.stringify(nextActivePoll));
           localStorage.setItem('ierihon_poll_active', 'true');
+          updateDocData('currentPoll', nextActivePoll);
+          updateDocData('isPollActive', true);
         } else {
-          const emptyPoll: PollData = {
-            id: '',
-            created: '',
-            date: '',
-            eat: 0,
-            no: 0,
-            abs: 0,
-            voters: []
-          };
-          setCurrentPoll(emptyPoll);
+          const empty = getEmptyPoll();
+          setCurrentPoll(empty);
           setIsPollActive(false);
-          updateDocData('currentPoll', emptyPoll);
-          updateDocData('isPollActive', false);
-          localStorage.setItem('ierihon_current_poll', JSON.stringify(emptyPoll));
+          localStorage.setItem('ierihon_current_poll', JSON.stringify(empty));
           localStorage.setItem('ierihon_poll_active', 'false');
+          updateDocData('currentPoll', empty);
+          updateDocData('isPollActive', false);
         }
       }
 
@@ -961,15 +945,7 @@ export default function App() {
       const emptyDuties = { zones: [] };
       const emptyEvents: ClassEvent[] = [];
       const stockBirthdays = sanitizeBirthdaysList(INITIAL_BIRTHDAYS);
-      const emptyPoll: PollData = {
-        id: '1',
-        created: '',
-        date: '',
-        eat: 0,
-        no: 0,
-        abs: 0,
-        voters: []
-      };
+      const emptyPoll = getEmptyPoll();
       const emptyPollHistory: PollData[] = [];
 
       setSchedules(DEFAULT_SCHEDULES);
@@ -1017,75 +993,33 @@ export default function App() {
 
     let targetDate = customDate;
     if (!targetDate) {
-      const existingPollDates: Date[] = [];
-      if (currentPoll && currentPoll.date) {
-        const d = parseLocalDate(currentPoll.date);
-        if (!isNaN(d.getTime())) existingPollDates.push(d);
+      let candidate = getNextSchoolDay(today);
+      const existingDates = new Set(pollHistory.map(p => p.date));
+      if (currentPoll && currentPoll.date && currentPoll.id !== 'poll_init') {
+        existingDates.add(currentPoll.date);
       }
-      pollHistory.forEach(p => {
-        if (p.date) {
-          const d = parseLocalDate(p.date);
-          if (!isNaN(d.getTime())) existingPollDates.push(d);
-        }
-      });
 
-      const validFutureDates = existingPollDates.filter(d => d >= today);
-      let baseDate = today;
-      if (validFutureDates.length > 0) {
-        baseDate = new Date(Math.max(...validFutureDates.map(d => d.getTime())));
+      let attempts = 0;
+      while (existingDates.has(formatLocalDateToYYYYMMDD(candidate)) && attempts < 14) {
+        candidate = getNextSchoolDay(candidate);
+        attempts++;
       }
-      const candidate = getNextSchoolDay(baseDate);
       targetDate = formatLocalDateToYYYYMMDD(candidate);
     }
 
-    // Check if an existing poll for this date already exists
-    const existingForDate = pollHistory.find(p => p.date === targetDate) || (currentPoll && currentPoll.date === targetDate ? currentPoll : null);
+    const todayStr = formatLocalDateToYYYYMMDD(today);
+    const { updatedPolls, activePoll } = createOrActivatePoll(pollHistory, targetDate, todayStr);
 
-    // Save previous currentPoll to history if it has valid info
-    let updatedHistory = [...pollHistory];
-    if (currentPoll && currentPoll.date && currentPoll.id && currentPoll.id !== 'poll_init') {
-      const idx = updatedHistory.findIndex(p => p.id === currentPoll.id || p.date === currentPoll.date);
-      if (idx >= 0) {
-        updatedHistory[idx] = { ...currentPoll };
-      } else {
-        updatedHistory = [{ ...currentPoll }, ...updatedHistory];
-      }
-    }
-
-    let newPoll: PollData;
-    if (existingForDate && Array.isArray(existingForDate.voters) && existingForDate.voters.length > 0) {
-      // Re-activate existing poll and keep all votes intact
-      newPoll = { ...existingForDate };
-    } else {
-      newPoll = {
-        id: 'poll_' + Date.now(),
-        created: formatLocalDateToYYYYMMDD(today),
-        date: targetDate,
-        eat: 0,
-        no: 0,
-        abs: 0,
-        voters: []
-      };
-    }
-
-    // Immediately include newPoll at top of history, removing any duplicate
-    const finalHistory = [
-      newPoll,
-      ...updatedHistory.filter(p => p.id !== newPoll.id && p.date !== newPoll.date)
-    ];
-
-    setCurrentPoll(newPoll);
-    setPollHistory(finalHistory);
+    setCurrentPoll(activePoll);
+    setPollHistory(updatedPolls);
     setIsPollActive(true);
 
-    // Persist immediately to localStorage
-    localStorage.setItem('ierihon_current_poll', JSON.stringify(newPoll));
-    localStorage.setItem('ierihon_poll_history', JSON.stringify(finalHistory));
+    localStorage.setItem('ierihon_current_poll', JSON.stringify(activePoll));
+    localStorage.setItem('ierihon_poll_history', JSON.stringify(updatedPolls));
     localStorage.setItem('ierihon_poll_active', 'true');
 
-    // Persist to Firestore
-    updateDocData('currentPoll', newPoll);
-    updateDocData('pollHistory', finalHistory);
+    updateDocData('currentPoll', activePoll);
+    updateDocData('pollHistory', updatedPolls);
     updateDocData('isPollActive', true);
 
     handleNavigate('canteen-poll');
@@ -1105,64 +1039,24 @@ export default function App() {
     if (!currentPoll || !currentPoll.id || currentPoll.id === 'poll_init' || !currentPoll.date) return;
     const userName = getTelegramUserName(lang);
 
-    const voters = Array.isArray(currentPoll.voters) ? [...currentPoll.voters] : [];
-    const existingIdx = voters.findIndex(v => v.name === userName);
-
-    let newEat = currentPoll.eat || 0;
-    let newNo = currentPoll.no || 0;
-    let newAbs = currentPoll.abs || 0;
-
-    if (existingIdx >= 0) {
-      const oldStatus = voters[existingIdx].status;
-      if (oldStatus === status) return; // no change
-
-      if (oldStatus === 'eat' && newEat > 0) newEat--;
-      if (oldStatus === 'no' && newNo > 0) newNo--;
-      if (oldStatus === 'abs' && newAbs > 0) newAbs--;
-
-      voters[existingIdx] = { name: userName, status };
-    } else {
-      voters.push({ name: userName, status });
-    }
-
-    if (status === 'eat') newEat++;
-    if (status === 'no') newNo++;
-    if (status === 'abs') newAbs++;
-
-    const updatedPoll: PollData = {
-      ...currentPoll,
-      eat: newEat,
-      no: newNo,
-      abs: newAbs,
-      voters
-    };
+    const updatedPoll = castVote(currentPoll, userName, status);
+    const updatedHistory = cleanAndSortPolls([updatedPoll, ...pollHistory]);
 
     setCurrentPoll(updatedPoll);
+    setPollHistory(updatedHistory);
     setIsPollActive(true);
-    localStorage.setItem('ierihon_current_poll', JSON.stringify(updatedPoll));
-    localStorage.setItem('ierihon_poll_active', 'true');
-    updateDocData('currentPoll', updatedPoll);
-    updateDocData('isPollActive', true);
-
-    // Also update pollHistory safely with prev state to avoid race conditions
-    setPollHistory(prev => {
-      const currentList = Array.isArray(prev) ? prev : [];
-      const idx = currentList.findIndex(p => p.id === updatedPoll.id || (updatedPoll.date && p.date === updatedPoll.date));
-      let nextHist: PollData[];
-      if (idx >= 0) {
-        nextHist = [...currentList];
-        nextHist[idx] = updatedPoll;
-      } else {
-        nextHist = [updatedPoll, ...currentList];
-      }
-      localStorage.setItem('ierihon_poll_history', JSON.stringify(nextHist));
-      updateDocData('pollHistory', nextHist);
-      return nextHist;
-    });
 
     if (selectedPollDetail && (selectedPollDetail.id === updatedPoll.id || selectedPollDetail.date === updatedPoll.date)) {
       setSelectedPollDetail(updatedPoll);
     }
+
+    localStorage.setItem('ierihon_current_poll', JSON.stringify(updatedPoll));
+    localStorage.setItem('ierihon_poll_history', JSON.stringify(updatedHistory));
+    localStorage.setItem('ierihon_poll_active', 'true');
+
+    updateDocData('currentPoll', updatedPoll);
+    updateDocData('pollHistory', updatedHistory);
+    updateDocData('isPollActive', true);
 
     haptic('medium');
   };
@@ -1171,53 +1065,20 @@ export default function App() {
     if (!selectedPollDetail || !selectedPollDetail.id) return;
     const userName = getTelegramUserName(lang);
 
-    const voters = Array.isArray(selectedPollDetail.voters) ? [...selectedPollDetail.voters] : [];
-    const existingIdx = voters.findIndex(v => v.name === userName);
-
-    let newEat = selectedPollDetail.eat || 0;
-    let newNo = selectedPollDetail.no || 0;
-    let newAbs = selectedPollDetail.abs || 0;
-
-    if (existingIdx >= 0) {
-      const oldStatus = voters[existingIdx].status;
-      if (oldStatus === status) return;
-
-      if (oldStatus === 'eat' && newEat > 0) newEat--;
-      if (oldStatus === 'no' && newNo > 0) newNo--;
-      if (oldStatus === 'abs' && newAbs > 0) newAbs--;
-
-      voters[existingIdx] = { name: userName, status };
-    } else {
-      voters.push({ name: userName, status });
-    }
-
-    if (status === 'eat') newEat++;
-    if (status === 'no') newNo++;
-    if (status === 'abs') newAbs++;
-
-    const updatedPoll: PollData = {
-      ...selectedPollDetail,
-      eat: newEat,
-      no: newNo,
-      abs: newAbs,
-      voters
-    };
+    const updatedPoll = castVote(selectedPollDetail, userName, status);
+    const updatedHistory = cleanAndSortPolls([updatedPoll, ...pollHistory]);
 
     setSelectedPollDetail(updatedPoll);
-
-    setPollHistory(prev => {
-      const currentList = Array.isArray(prev) ? prev : [];
-      const updatedHistory = currentList.map(p => (p.id === updatedPoll.id || (p.date && p.date === updatedPoll.date) ? updatedPoll : p));
-      localStorage.setItem('ierihon_poll_history', JSON.stringify(updatedHistory));
-      updateDocData('pollHistory', updatedHistory);
-      return updatedHistory;
-    });
+    setPollHistory(updatedHistory);
 
     if (currentPoll && (currentPoll.id === updatedPoll.id || currentPoll.date === updatedPoll.date)) {
       setCurrentPoll(updatedPoll);
       localStorage.setItem('ierihon_current_poll', JSON.stringify(updatedPoll));
       updateDocData('currentPoll', updatedPoll);
     }
+
+    localStorage.setItem('ierihon_poll_history', JSON.stringify(updatedHistory));
+    updateDocData('pollHistory', updatedHistory);
 
     haptic('medium');
   };

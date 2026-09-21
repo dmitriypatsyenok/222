@@ -3,6 +3,7 @@ import { BirthdayItem, DayKey, DutiesStore, HomeworkStore, Language, PollData, P
 import { translate, getProfileFullTitle } from './i18n';
 import { getValidProfileKeys } from './dateFormatter';
 import { haptic } from './telegram';
+import { cleanAndSortPolls } from './pollManager';
 import { Download, Upload, Trash2, Check, Bell, Save, BookOpen, Ruler, FlaskConical, Moon, Sun, RotateCcw, Sparkles, Palette, Zap, Calendar, Gift, ClipboardList, Utensils, AlertTriangle, Shield } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -84,16 +85,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [webhookLoading, setWebhookLoading] = useState(false);
   const [webhookStatus, setWebhookStatus] = useState<{ success: boolean; msg: string } | null>(null);
 
-  // Collect all valid polls (current and historical)
-  const allPolls: PollData[] = [];
-  if (currentPoll && (currentPoll.date || currentPoll.created || currentPoll.id)) {
-    allPolls.push(currentPoll);
-  }
-  pollHistory.forEach(p => {
-    if (p.id && !allPolls.some(ap => ap.id === p.id)) {
-      allPolls.push(p);
-    }
-  });
+  // Collect all valid polls (current and historical) cleanly
+  const allPolls = cleanAndSortPolls([
+    ...(currentPoll ? [currentPoll] : []),
+    ...(pollHistory || [])
+  ]);
 
   const [selectedDeletePollId, setSelectedDeletePollId] = useState<string>(() => allPolls[0]?.id || '');
 
